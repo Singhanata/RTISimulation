@@ -29,9 +29,7 @@ class Scheme():
 class SidePositonScheme(Scheme):
     def __init__(
             self,
-            ref_pos=(
-                0.,
-                0.),
+            ref_pos=(0.,0.),
             area_width=6.,
             area_height=10.,
             vx_width=1.,
@@ -69,6 +67,6 @@ class SidePositonScheme(Scheme):
         self.area_width = area_width
         self.area_height = area_height
         self.vx_width = vx_width
-        self.vx_length = vx_length
+        self.vx_height = vx_height
         self.n_sensor = n_sensor
         self.dist_ss = dist_ss
