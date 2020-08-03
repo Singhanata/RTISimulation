@@ -7,6 +7,7 @@ Created on Fri Jul 31 16:02:14 2020
 from abc import ABCMeta, abstractmethod
 import numpy as np
 from geoutil import RTIGrid, Position, Sensor
+from link import RTILink
 
 class Selection():
     def __init__(self, rtiGrid, selecteD, coordX, coordY):
@@ -15,12 +16,11 @@ class Selection():
         self.coordX = coordX
         self.coordY = coordY
 
-class Scheme(metaclass=ABCMeta):
+class RTIScheme(metaclass=ABCMeta):
     def __init__(self, rtiGrid):
         self.rtiGrid = rtiGrid
         super.__init__()
 
-    @property
     def sensorS(self):
         raise NotImplementedError
     def linkS(self):
@@ -35,16 +35,20 @@ class Scheme(metaclass=ABCMeta):
     @abstractmethod
     def initVoxels(self):
         pass
+ 
+    @abstractmethod
+    def initSensors(self):
+        pass
 
-class SidePositonScheme(Scheme):
+class SidePositonScheme(RTIScheme):
     def __init__(
             self,
-            ref_pos=(0., 0.),
+            ref_pos= Position(0.,0.),
             area_width=6.,
             area_height=10.,
             vx_width=1.,
             vx_height=1.,
-            n_sensor=18,
+            n_sensor=20,
             wa_width=4.,
             wa_height=10.):
         """
@@ -105,44 +109,68 @@ class SidePositonScheme(Scheme):
         if dy < 0:
             raise ValueError('Working area height must be smaller than the height \
                              of the area of interest')
-        dnx = np.floor(np.floor(dx / self.vx_width)/2)
-        dny = np.floor(np.floor(dy / self.vx_height)/2)
-
-        bVoxeL = np.ones(voxelS.shape, dtype=bool)
+        dnx = int(np.floor(np.floor(dx / self.vx_width)/2))
+        dny = int(np.floor(np.floor(dy / self.vx_height)/2))
+        
+        coordX = []
+        for i in range(len(voxelS)):
+            coordX.append(voxelS[i][0].ref_pos.x)
+        coordY = []
+        for i in range(len(voxelS[0])):
+            coordY.append(voxelS[0][i].ref_pos.y)
+            
+        bVoxeL = np.ones((len(voxelS), len(voxelS[0])))
         while dnx > 0:
             dnx -= 1
-            bVoxeL[dnx][:] = False
-            bVoxeL[-(dnx+1)][:] = False
+            bVoxeL[dnx][:] = 0
+            bVoxeL[-(dnx+1)][:] = 0
+            coordX.remove(coordX[dnx])
+            coordX.remove(coordX[-(dnx+1)])
         while dny > 0:
             dny -= 1
             bVoxeL[:][dny] = False
             bVoxeL[:][-(dny+1)] = False
-
+            coordY.remove(coordY[dny])
+            coordY.remove(coordY[-(dny+1)])
+        
+        coordX = tuple(coordX)
+        coordY = tuple(coordY)
+        
+        bVoxeL = tuple(bVoxeL > 0)
+        
+        selection = Selection(self.rtiGrid, bVoxeL, coordX, coordY)
+        return voxelS, selection
+        
     def initSensors(self):
         if self.n_sensor % 2:
-            TypeError('In a side-position scheme, the total number of sensors must be even')
+            TypeError('In a side-position scheme, the total number of sensors \
+                      must be even')
 
-        s_distance = self.rtiGrid.x_span / (self.n_sensor/2 + 1)
+        s_distance = self.rtiGrid.y_span / (self.n_sensor/2)
         start = s_distance/2
 
-        s_pos_y = np.linspace(start, s_distance * self.n_sensor/2, int(self.n_sensor/2))
+        s_pos_y = np.linspace(start, 
+                              start + s_distance * (self.n_sensor/2-1), 
+                              int(self.n_sensor/2))
         leftSideSensorS = []
         rightSideSensorS = []
         for i in s_pos_y:
             leftSideSensorS.append(Sensor(Position(self.rtiGrid.min_x, i)))
-            rightSideSensorS.append(Sensor(Position(self.rtiGrid.min_x, i)))
+            rightSideSensorS.append(Sensor(Position(self.rtiGrid.max_x, i)))
 
-        sensorS = [leftSideSensorS, rightSideSensorS]
+        sensorS = tuple([leftSideSensorS, rightSideSensorS])
         return sensorS
 
+    def initLinks(self):
+        # In the side position scheme, the leftside sensors and rightside sensors
+        # are linked.
+        leftSideSensorS = self.sensorS[0][:]
+        rightSideSensorS = self.sensorS[1][:]
+        
+        linkS = []
+        for s1 in leftSideSensorS:
+            for s2 in rightSideSensorS:
+                linkS.append(RTILink(s1, s1, 0.))
+        linkS = tuple(linkS)
 
-
-
-
-
-
-
-
-    # def initLinks(self)
-
-
+sh = SidePositonScheme()

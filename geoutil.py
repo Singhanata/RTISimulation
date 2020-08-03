@@ -122,7 +122,7 @@ class RTIGrid:
                                self.gx_span,
                                self.gy_span,
                                Position(i,j)))
-        voxelS = np.reshape(voxelS, (int(self.nx), int(self.ny)))
+        voxelS = tuple(np.reshape(voxelS, (int(self.nx), int(self.ny))))
 
         return voxelS
 
