@@ -7,16 +7,6 @@ from math import sqrt
 import numpy as np
 from voxel import Voxel
 
-class Sensor:
-    def __init__(self, pos):
-        """
-        Parameters
-        ----------
-        pos : 2D Coordination Object
-            Position of the sensor node
-        """
-        self.pos = pos
-
 class Position:
     """
 

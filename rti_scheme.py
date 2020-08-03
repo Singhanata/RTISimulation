@@ -15,6 +15,12 @@ class Selection():
         self.selecteD = selecteD
         self.coordX = coordX
         self.coordY = coordY
+    
+    def getXIndex(self, x):
+        pass
+    
+    def getYIndex(self, y):
+        pass
 
 class RTIScheme(metaclass=ABCMeta):
     def __init__(self, rtiGrid):
@@ -26,6 +32,8 @@ class RTIScheme(metaclass=ABCMeta):
     def linkS(self):
         raise NotImplementedError
     def voxelS(self):
+        raise NotImplementedError
+    def selection(self):
         raise NotImplementedError
 
     @abstractmethod
@@ -68,7 +76,7 @@ class SidePositonScheme(RTIScheme):
         vx_height : TYPE, optional
             The height of The default is 1..
         n_sensor : Even Integer, optional
-            Total number of the deployed sensors on both side. The default is 18.
+            Total number of the deployed sensors on both side. The default is 20.
         wa_width : TYPE, optional
             DESCRIPTION. The default is 4..
         wa_height : TYPE, optional
@@ -113,11 +121,11 @@ class SidePositonScheme(RTIScheme):
         dny = int(np.floor(np.floor(dy / self.vx_height)/2))
         
         coordX = []
-        for i in range(len(voxelS)):
-            coordX.append(voxelS[i][0].ref_pos.x)
+        for _ in range(len(voxelS)):
+            coordX.append(voxelS[_][0].ref_pos.x)
         coordY = []
-        for i in range(len(voxelS[0])):
-            coordY.append(voxelS[0][i].ref_pos.y)
+        for _ in range(len(voxelS[0])):
+            coordY.append(voxelS[0][_].ref_pos.y)
             
         bVoxeL = np.ones((len(voxelS), len(voxelS[0])))
         while dnx > 0:
@@ -154,9 +162,9 @@ class SidePositonScheme(RTIScheme):
                               int(self.n_sensor/2))
         leftSideSensorS = []
         rightSideSensorS = []
-        for i in s_pos_y:
-            leftSideSensorS.append(Sensor(Position(self.rtiGrid.min_x, i)))
-            rightSideSensorS.append(Sensor(Position(self.rtiGrid.max_x, i)))
+        for _ in s_pos_y:
+            leftSideSensorS.append(Sensor(Position(self.rtiGrid.min_x, _)))
+            rightSideSensorS.append(Sensor(Position(self.rtiGrid.max_x, _)))
 
         sensorS = tuple([leftSideSensorS, rightSideSensorS])
         return sensorS
@@ -172,5 +180,3 @@ class SidePositonScheme(RTIScheme):
             for s2 in rightSideSensorS:
                 linkS.append(RTILink(s1, s1, 0.))
         linkS = tuple(linkS)
-
-sh = SidePositonScheme()
