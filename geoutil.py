@@ -5,6 +5,7 @@ Created on Thu Jul 30 07:35:20 2020
 """
 from math import sqrt
 import numpy as np
+from voxel import Voxel
 
 class Sensor:
     def __init__(self, pos):
@@ -74,13 +75,13 @@ class RTIGrid:
         """
         Parameters
         ----------
-        x_span : float
+        x_span : Float
             width in x
-        y_span : float
+        y_span : Float
             width in y
-        gx_span : float
+        gx_span : Float
             width of the unit grid square
-        gy_span : float
+        gy_span : Float
             width of the unit grid square
         ref_pos : 2D Position object
             Reference Position on the lower left corner
@@ -102,11 +103,28 @@ class RTIGrid:
         except:
             raise TypeError('The given position has no attribute "x" or "y"')
         self.nx = self.x_span/self.gx_span
-        self.X = np.linspace(self.min_x, self.max_x, self.nx)
         self.ny = self.y_span/self.gy_span
-        self.Y = np.linspace(self.min_y, self.max_y, self.ny)
+
+        self.coordX = np.linspace(self.min_x, self.max_x, int(self.nx + 1))
+        self.coordY = np.linspace(self.min_y, self.max_y, int(self.ny + 1))
 
     def getCoordination(self):
-        return (self.X, self.Y)
+        return (self.coordX, self.coordY)
 
+    def initVoxels(self):
+        ref_x = self.coordX[0:(len(self.coordX)-1)]
+        ref_y = self.coordY[0:(len(self.coordY)-1)]
 
+        voxelS = []
+        for i in ref_x:
+            for j in ref_y:
+                voxelS.append(Voxel((i*self.nx + j),
+                               self.gx_span,
+                               self.gy_span,
+                               Position(i,j)))
+        voxelS = np.reshape(voxelS, (int(self.nx), int(self.ny)))
+
+        return voxelS
+
+# gr = RTIGrid(6.,10.,1.,1.,Position(0.,0.))
+# V = gr.initVoxels()

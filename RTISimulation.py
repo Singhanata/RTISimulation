@@ -8,7 +8,7 @@ class IntersectPosition(Position):
     def __init__(self, x, y, linkLambda):
         super().__init__(x, y)
         self.linkLambda = linkLambda
-                
+
 class RTISimulation():
     def __init__(self, scheme):
         self.area_w = area_w
@@ -17,20 +17,11 @@ class RTISimulation():
         self.voxel_l = voxel_l
         self.n_sensor = n_sensor
         self.dist_ss = dist_ss
-        
-    def calSensorPos(self):
-        l = self.area_l
-        if self.n_sensor % 2:
-            raise ValueError('The sensor number must be even!! in this schematics')
-        n = self.n_sensor/2 + 1
-        d = l/n
-        start = d/2
-        pos_y = np.linspace(start, start + d * self.n_sensor, n_sensor)
-        pos_y = np.concatenate([pos_y,pos_y])
-        
 
-    
-                            
+
+
+
+
 # def initSensorArr(arr_x, arr_y):
 #     """
 #     Parameters
@@ -45,7 +36,7 @@ class RTISimulation():
 #     sensor_arr : TYPE
 #         DESCRIPTION.
 #     """
-    
+
 #     sensor_arr = []
 #     # Check arr_x and arr_y must be at equal size
 #     if not (len(arr_x) == len(arr_y)):
@@ -56,26 +47,26 @@ class RTISimulation():
 #     return sensor_arr
 
 # def initXGrid(area_w, voxel_w):
-    
+
 #     arr_x = []
-    
-#     n_x = int(area_w/voxel_w) 
+
+#     n_x = int(area_w/voxel_w)
 #     for i in range(n_x + 1):
 #         arr_x.append(i * voxel_w)
 #     return arr_x
 
 # def initYGrid(area_l, voxel_l):
-    
+
 #     arr_y = []
-    
-#     n_y = int(area_l/voxel_l) 
+
+#     n_y = int(area_l/voxel_l)
 #     for i in range(n_y + 1):
 #         arr_y.append(i * voxel_l)
 #     return arr_y
 
 # def initVoxelField(arr_x, arr_y, voxel_w, voxel_l, ref_pos):
 #     """
-    
+
 
 #     Parameters
 #     ----------
@@ -96,22 +87,22 @@ class RTISimulation():
 #         DESCRIPTION.
 
 #     """
-    
+
 #     voxel_arr = []
 #     n_x = len(arr_x)-1
 #     n_y = len(arr_y)-1
 #     for i in arr_x[0:n_x]:
 #         for j in arr_y[0:n_y]:
-#             idx = i * len(arr_y) + j 
+#             idx = i * len(arr_y) + j
 #             pos = Position(arr_x[i],arr_y[j])
 #             voxel_arr.append(Voxel(idx, voxel_w, voxel_l, pos, 0, False, 0))
-    
+
 #     voxel_field = VoxelField(voxel_w, voxel_l, n_x, n_y, voxel_arr, ref_pos)
 #     return voxel_field
 
 # def initLinkArr(sensor_arr_a, sensor_arr_b):
 #     """
-    
+
 
 #     Parameters
 #     ----------
@@ -126,9 +117,9 @@ class RTISimulation():
 #         DESCRIPTION.
 
 #     """
-    
+
 #     link_arr = []
-#     # 
+#     #
 #     for sa in sensor_arr_a:
 #         for sb in sensor_arr_b:
 #             link_arr.append(RTILink(sa,sb, 0))
@@ -136,7 +127,7 @@ class RTISimulation():
 
 # def buildWeightingMatrix(link_arr, voxel_field, arr_x, arr_y, voxel_w, voxel_l):
 #     """
-    
+
 
 #     Parameters
 #     ----------
@@ -164,24 +155,24 @@ class RTISimulation():
 #                 # calculate y at any x on the defined grid
 #                 y = l.sensor1.pos.y - linkLambda * (l.sensor2.pos.y - l.sensor1.pos.y)
 #                 voxel_idx = voxel_field.findVoxelIdx(i, y) # find index in the array
-#                 voxel_field.voxel_arr[voxel_idx] = 
-                
-                
+#                 voxel_field.voxel_arr[voxel_idx] =
+
+
 
 #         for j in arr_y:
 #             # Find lambda of each value in Grid y
 #             linkLambda = (j - l.sensor1.pos.y)/(l.sensor2.pos.y - l.sensor1.pos.y)
-#             if linkLambda <= 1:    
+#             if linkLambda <= 1:
 #                 intersection_arr.append(linkLambda)
 #         # Alreary got all lambda at every intersection
-        
+
 #     # Calculate Selection Binary Matrix
-        
+
 #     # Calculate Omega Matrix (Corresponding coefficiecnts)
-    
-    
-    
-# # declare variables     
+
+
+
+# # declare variables
 # area_w = 4
 # area_l = 10
 # voxel_w = 1
@@ -198,7 +189,7 @@ class RTISimulation():
 # n_link = len(sensor_arr_a) * len(sensor_arr_b)
 # # Build Voxel Array
 # arr_x = initXGrid(area_w, voxel_w)
-# arr_y = initYGrid(area_l, voxel_l) 
+# arr_y = initYGrid(area_l, voxel_l)
 # voxel_field = initVoxelField(arr_x, arr_y, voxel_w, voxel_l, Position(1,0))
 # # Build Link Array
 # link_arr  = initLinkArr(sensor_arr_a, sensor_arr_b)
