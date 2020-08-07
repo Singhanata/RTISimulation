@@ -115,6 +115,15 @@ class RTIGrid:
         voxelS = tuple(np.reshape(voxelS, (int(self.nx), int(self.ny))))
 
         return voxelS
-
+    
+    def reshapeVoxelArr2Im(vArr, shape):
+        vArr = np.array(vArr)
+        im = vArr.reshape(vArr, (shape[1],shape[0])).T
+        return im
+        
+    def reshapeVoxelM2Arr(vM):
+        vM = np.array(vM)
+        return vM.transpose().reshape(-1).transpose()
+    
 # gr = RTIGrid(6.,10.,1.,1.,Position(0.,0.))
 # V = gr.initVoxels()

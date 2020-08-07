@@ -6,8 +6,8 @@ Created on Fri Jul 31 16:02:14 2020
 """
 from abc import ABCMeta, abstractmethod
 import numpy as np
-from geoutil import RTIGrid, Position, Sensor
-from link import RTILink
+from geoutil import RTIGrid, Position
+from link import RTILink, Sensor
 
 class Selection():
     def __init__(self, rtiGrid, selecteD, coordX, coordY):
@@ -16,17 +16,38 @@ class Selection():
         self.coordX = coordX
         self.coordY = coordY
     
-    def getXIndex(self, x):
-        pass
+    def getXIndex(self, x, isPositive):
+        coordX = self.coordX
+        if isPositive:
+            for i in range(len(coordX)-1):
+                if coordX[i] <= x < coordX[i+1]:
+                    return i
+            raise ValueError('input value is out of bound')
+        else:
+            for i in range(len(coordX)-1):
+                if coordX[i+1] >= x > coordX[i]:
+                    return i
+            raise ValueError('input value is out of bound')
     
-    def getYIndex(self, y):
-        pass
+    def getYIndex(self, y, isPositive):
+        coordY = self.coordY
+        if isPositive:
+            for i in range(len(coordY)-1):
+                if coordY[i] <= y < coordY[i+1]:
+                    return i
+            raise ValueError('input value is out of bound')
+        else:
+            for i in range(len(coordY)-1):
+                if coordY[i+1] >= y > coordY[i]:
+                    return i
+            raise ValueError('input value is out of bound')
 
 class RTIScheme(metaclass=ABCMeta):
-    def __init__(self, rtiGrid):
-        self.rtiGrid = rtiGrid
-        super.__init__()
+    def __init__(self):
+        super().__init__()
 
+    def rtiGrid(self):
+        raise NotImplementedError
     def sensorS(self):
         raise NotImplementedError
     def linkS(self):
@@ -48,7 +69,7 @@ class RTIScheme(metaclass=ABCMeta):
     def initSensors(self):
         pass
 
-class SidePositonScheme(RTIScheme):
+class SidePositionScheme(RTIScheme):
     def __init__(
             self,
             ref_pos= Position(0.,0.),
@@ -87,6 +108,13 @@ class SidePositonScheme(RTIScheme):
         None.
 
         """
+        super().__init__()
+        
+        self.rtiGrid = RTIGrid(area_width,
+                               area_height,
+                               vx_width,
+                               vx_height,
+                               ref_pos)
         self.area_width = area_width
         self.area_height = area_height
         self.vx_width = vx_width
@@ -95,14 +123,10 @@ class SidePositonScheme(RTIScheme):
         self.wa_width = wa_width
         self.wa_height = wa_height
 
-        self.rtiGrid = RTIGrid(area_width,
-                               area_height,
-                               vx_width,
-                               vx_height,
-                               ref_pos)
         self.voxelS, self.selection = self.initVoxels()
         self.sensorS = self.initSensors()
         self.linkS = self.initLinks()
+
 
     def initVoxels(self):
         # Create all voxels from the RTI grid (area of interest)
@@ -121,31 +145,43 @@ class SidePositonScheme(RTIScheme):
         dny = int(np.floor(np.floor(dy / self.vx_height)/2))
         
         coordX = []
-        for _ in range(len(voxelS)):
-            coordX.append(voxelS[_][0].ref_pos.x)
+        for i in range(len(voxelS)):
+            coordX.append(voxelS[i][0].ref_pos.x)
+        coordX.append(voxelS[len(voxelS)-1][0].ref_pos.x + 
+                      voxelS[len(voxelS)-1][0].width)
         coordY = []
-        for _ in range(len(voxelS[0])):
-            coordY.append(voxelS[0][_].ref_pos.y)
+        for i in range(len(voxelS[0])):
+            coordY.append(voxelS[0][i].ref_pos.y)
+        coordY.append(voxelS[0][len(voxelS[0])-1].ref_pos.y + 
+                      voxelS[0][len(voxelS[0])-1].height)
             
-        bVoxeL = np.ones((len(voxelS), len(voxelS[0])))
+        bVoxeL = np.zeros((len(voxelS), len(voxelS[0])))
         while dnx > 0:
             dnx -= 1
-            bVoxeL[dnx][:] = 0
-            bVoxeL[-(dnx+1)][:] = 0
+            
+            voxelS = np.delete(voxelS, dnx, 0)
+            voxelS = np.delete(voxelS, -(dnx+1), 0)
+            
+            bVoxeL = np.delete(bVoxeL, dnx, 0)
+            bVoxeL = np.delete(bVoxeL, -(dnx+1), 0)
+            
             coordX.remove(coordX[dnx])
             coordX.remove(coordX[-(dnx+1)])
         while dny > 0:
             dny -= 1
-            bVoxeL[:][dny] = False
-            bVoxeL[:][-(dny+1)] = False
+            
+            voxelS = np.delete(voxelS, dny, 1)
+            voxelS = np.delete(voxelS, -(dny+1), 1)
+            
+            bVoxeL = np.delete(bVoxeL, dny, 1)
+            bVoxeL = np.delete(bVoxeL, -(dny+1), 1)
+            
             coordY.remove(coordY[dny])
             coordY.remove(coordY[-(dny+1)])
         
         coordX = tuple(coordX)
-        coordY = tuple(coordY)
-        
-        bVoxeL = tuple(bVoxeL > 0)
-        
+        coordY = tuple(coordY)        
+        bVoxeL = tuple(bVoxeL)
         selection = Selection(self.rtiGrid, bVoxeL, coordX, coordY)
         return voxelS, selection
         
@@ -162,9 +198,9 @@ class SidePositonScheme(RTIScheme):
                               int(self.n_sensor/2))
         leftSideSensorS = []
         rightSideSensorS = []
-        for _ in s_pos_y:
-            leftSideSensorS.append(Sensor(Position(self.rtiGrid.min_x, _)))
-            rightSideSensorS.append(Sensor(Position(self.rtiGrid.max_x, _)))
+        for y in s_pos_y:
+            leftSideSensorS.append(Sensor(Position(self.rtiGrid.min_x, y)))
+            rightSideSensorS.append(Sensor(Position(self.rtiGrid.max_x, y)))
 
         sensorS = tuple([leftSideSensorS, rightSideSensorS])
         return sensorS
@@ -178,5 +214,23 @@ class SidePositonScheme(RTIScheme):
         linkS = []
         for s1 in leftSideSensorS:
             for s2 in rightSideSensorS:
-                linkS.append(RTILink(s1, s1, 0.))
+                linkS.append(RTILink(s1, s2, 0.))
         linkS = tuple(linkS)
+        
+        return linkS
+    
+    def getVoxelScenario(self, x_range, y_range):
+        if x_range[0] > x_range[1] or y_range[0] > y_range[1]:
+            raise ValueError('input must be in form (min, max)')
+        
+        x_min = x_range[0]
+        x_max = x_range[1]
+        y_min = y_range[0]
+        y_max = y_range[1]
+        
+        for i in range(len(self.voxelS)):
+            for j in range(len(self.voxelS[i])):
+                pass
+    
+    def getRTIDim(self):
+        return (len(self.linkS), self.voxelS())

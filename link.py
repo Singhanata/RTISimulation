@@ -17,13 +17,13 @@ class Sensor:
         self.pos = pos
         
 class RTILink:
-    def __init__(self, sensor1, sensor2, value):
+    def __init__(self, tx, rx, value):
         """
         Parameters
         ----------
-        sensor1 : TYPE
+        tx : TYPE
             DESCRIPTION.
-        sensor2 : TYPE
+        rx : TYPE
             DESCRIPTION.
         value : TYPE
             Value associated with attenuation
@@ -33,28 +33,29 @@ class RTILink:
         -------
         None.
         """
-            
-        self.distance = self.calLinkDistance()
+        self.tx = tx
+        self.rx = rx
         self.value = value
+        self.distance = self.calLinkDistance()
         
     def calLinkDistance(self):
-        d = Position.calDistance(self.sensor1.pos, self.sensor2.pos)
+        d = Position.calDistance(self.tx.pos, self.rx.pos)
         return  d
     
     def getPositions(self):
-        return (self.sensor1.pos, self.sensor2.pos)
+        return (self.tx.pos, self.rx.pos)
     
-    def getXDistance(self):
-        return abs(self.sensor2.pos.x - self.sensor1.pos.x)
+    def getXDiff(self):
+        return self.rx.pos.x - self.tx.pos.x
 
-    def getYDistance(self):
-        return abs(self.sensor2.pos.y - self.sensor1.pos.y)
+    def getYDiff(self):
+        return self.rx.pos.y - self.tx.pos.y
     
     def getXRatio(self, x):
-        x1 = self.sensor1.pos.x
-        x2 = self.sensor2.pos.x
-        y1 = self.sensor1.pos.y
-        y2 = self.sensor2.pos.y
+        x1 = self.tx.pos.x
+        x2 = self.rx.pos.x
+        y1 = self.tx.pos.y
+        y2 = self.rx.pos.y
         
         dx_t = x2 - x1
         dx = x - x1
@@ -65,10 +66,10 @@ class RTILink:
         return (rt, y, (0 <= rt <= 1))
     
     def getYRatio(self, y):
-        x1 = self.sensor1.pos.x
-        x2 = self.sensor2.pos.x
-        y1 = self.sensor1.pos.y
-        y2 = self.sensor2.pos.y
+        x1 = self.tx.pos.x
+        x2 = self.rx.pos.x
+        y1 = self.tx.pos.y
+        y2 = self.rx.pos.y
         
         dy_t = y2 - y1
         dy = y - y1
