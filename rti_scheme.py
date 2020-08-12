@@ -8,7 +8,6 @@ from abc import ABCMeta, abstractmethod
 import numpy as np
 from geoutil import RTIGrid, Position
 from link import RTILink, Sensor
-import copy 
 
 class Selection():
     def __init__(self, rtiGrid, selecteD, coordX, coordY):
@@ -16,7 +15,7 @@ class Selection():
         self.selecteD = selecteD
         self.coordX = coordX
         self.coordY = coordY
-    
+
     def getXIndex(self, x, isPositive):
         coordX = self.coordX
         if isPositive:
@@ -29,7 +28,7 @@ class Selection():
                 if coordX[i+1] >= x > coordX[i]:
                     return i
             raise ValueError('input value is out of bound')
-    
+
     def getYIndex(self, y, isPositive):
         coordY = self.coordY
         if isPositive:
@@ -42,7 +41,7 @@ class Selection():
                 if coordY[i+1] >= y > coordY[i]:
                     return i
             raise ValueError('input value is out of bound')
-    
+
     def getXIndexArr(self, x_range):
         try:
             min_x = x_range[0]
@@ -52,12 +51,12 @@ class Selection():
                                  in the ascending order')
         except:
             raise TypeError('input must be in form (min,max)')
-        
-        min_idx = self.getXIndex(min_x, False)
-        max_idx = self.getXIndex(max_x, True)
-        
+
+        min_idx = self.getXIndex(min_x, True)
+        max_idx = self.getXIndex(max_x, False)
+
         return (min_idx, max_idx)
- 
+
     def getYIndexArr(self, y_range):
         try:
             min_y = y_range[0]
@@ -67,12 +66,15 @@ class Selection():
                                  in the ascending order')
         except:
             raise TypeError('input must be in form (min,max)')
-        
-        min_idx = self.getYIndex(min_y, False)
-        max_idx = self.getYIndex(max_y, True)
-        
+
+        min_idx = self.getYIndex(min_y, True)
+        max_idx = self.getYIndex(max_y, False)
+
         return (min_idx, max_idx)
-        
+
+    def getShape(self):
+        return (len(self.coordX)-1,len(self.coordY)-1)
+
 class RTIScheme(metaclass=ABCMeta):
     def __init__(self):
         super().__init__()
@@ -97,7 +99,7 @@ class RTIScheme(metaclass=ABCMeta):
     @abstractmethod
     def initSensors(self):
         pass
-    @abstractmethod 
+    @abstractmethod
     def getVoxelScenario():
         pass
 
@@ -105,14 +107,14 @@ class SidePositionScheme(RTIScheme):
     def __init__(
             self,
             ref_pos= Position(0.,0.),
-            area_width=60.,
-            area_length=100.,
+            area_width=6.,
+            area_length=10.,
             vx_width=1.,
             vx_length=1.,
-            n_sensor=100,
-            wa_width=50.,
-            wa_length=100.):
-        
+            n_sensor=20,
+            wa_width=4.,
+            wa_length=10.):
+
         """
         Constructor of SidePositionScheme Class: Evaluation of RTI scheme in which
         sensors are deployed in the sideline of the area of interest
@@ -141,9 +143,9 @@ class SidePositionScheme(RTIScheme):
         None.
 
         """
-        
+
         super().__init__()
-        
+
         self.vx_width = vx_width
         self.vx_length = vx_length
         self.area_width = area_width
@@ -161,7 +163,7 @@ class SidePositionScheme(RTIScheme):
         self.voxelS, self.selection = self.initVoxels()
         self.sensorS = self.initSensors()
         self.linkS = self.initLinks()
- 
+
     @property
     def vx_width(self):
         return self.__vx_width
@@ -171,7 +173,7 @@ class SidePositionScheme(RTIScheme):
             self.__vx_width = w
         else:
             raise ValueError('Voxel width must be positive')
-            
+
     @property
     def vx_length(self):
         return self.__vx_length
@@ -181,7 +183,7 @@ class SidePositionScheme(RTIScheme):
             self.__vx_length = l
         else:
             raise ValueError('Voxel length must be positive')
-            
+
     @property
     def area_width(self):
         return self.__area_width
@@ -191,7 +193,7 @@ class SidePositionScheme(RTIScheme):
             raise ValueError('Area Width must be positive and \
                              more than voxel width')
         self.__area_width = w
-        
+
     @property
     def area_length(self):
         return self.__area_length
@@ -202,7 +204,7 @@ class SidePositionScheme(RTIScheme):
         else:
             raise ValueError('Area length must be positive and \
                              more than voxel length')
-            
+
     @property
     def wa_width(self):
         return self.__wa_width
@@ -213,7 +215,7 @@ class SidePositionScheme(RTIScheme):
         else:
             raise ValueError('Working area width must be more than \
                              voxel width and less than area width')
-                             
+
     @property
     def wa_length(self):
         return self.__wa_length
@@ -224,14 +226,7 @@ class SidePositionScheme(RTIScheme):
         else:
             raise ValueError('Working area length must be more than \
                              voxel length and less than area length')
-            
-    @property
-    def voxelS(self):
-        return copy.deepcopy(self.__voxelS)
-    @voxelS.setter
-    def voxelS(self, vxS):
-        self.__voxelS = vxS                            
-    
+
     def initVoxels(self):
         # Create all voxels from the RTI grid (area of interest)
         voxelS = self.rtiGrid.initVoxels()
@@ -247,48 +242,48 @@ class SidePositionScheme(RTIScheme):
                              the length of the area of interest')
         dnx = int(np.floor(np.floor(dx / self.vx_width)/2))
         dny = int(np.floor(np.floor(dy / self.vx_length)/2))
-        
+
         coordX = []
         for i in range(len(voxelS)):
             coordX.append(voxelS[i][0].ref_pos.x)
-        coordX.append(voxelS[len(voxelS)-1][0].ref_pos.x + 
+        coordX.append(voxelS[len(voxelS)-1][0].ref_pos.x +
                       voxelS[len(voxelS)-1][0].width)
         coordY = []
         for i in range(len(voxelS[0])):
             coordY.append(voxelS[0][i].ref_pos.y)
-        coordY.append(voxelS[0][len(voxelS[0])-1].ref_pos.y + 
+        coordY.append(voxelS[0][len(voxelS[0])-1].ref_pos.y +
                       voxelS[0][len(voxelS[0])-1].length)
-            
+
         bVoxeL = np.zeros((len(voxelS), len(voxelS[0])))
         while dnx > 0:
             dnx -= 1
-            
+
             voxelS = np.delete(voxelS, dnx, 0)
             voxelS = np.delete(voxelS, -(dnx+1), 0)
-            
+
             bVoxeL = np.delete(bVoxeL, dnx, 0)
             bVoxeL = np.delete(bVoxeL, -(dnx+1), 0)
-            
+
             coordX.remove(coordX[dnx])
             coordX.remove(coordX[-(dnx+1)])
         while dny > 0:
             dny -= 1
-            
+
             voxelS = np.delete(voxelS, dny, 1)
             voxelS = np.delete(voxelS, -(dny+1), 1)
-            
+
             bVoxeL = np.delete(bVoxeL, dny, 1)
             bVoxeL = np.delete(bVoxeL, -(dny+1), 1)
-            
+
             coordY.remove(coordY[dny])
             coordY.remove(coordY[-(dny+1)])
-        
+
         coordX = tuple(coordX)
-        coordY = tuple(coordY)        
+        coordY = tuple(coordY)
         bVoxeL = tuple(bVoxeL)
         selection = Selection(self.rtiGrid, bVoxeL, coordX, coordY)
         return voxelS, selection
-        
+
     def initSensors(self):
         if self.n_sensor % 2:
             TypeError('In a side-position scheme, the total number of sensors \
@@ -297,8 +292,8 @@ class SidePositionScheme(RTIScheme):
         s_distance = self.rtiGrid.y_span / (self.n_sensor/2)
         start = s_distance/2
 
-        s_pos_y = np.linspace(start, 
-                              start + s_distance * (self.n_sensor/2-1), 
+        s_pos_y = np.linspace(start,
+                              start + s_distance * (self.n_sensor/2-1),
                               int(self.n_sensor/2))
         leftSideSensorS = []
         rightSideSensorS = []
@@ -314,28 +309,36 @@ class SidePositionScheme(RTIScheme):
         # are linked.
         leftSideSensorS = self.sensorS[0][:]
         rightSideSensorS = self.sensorS[1][:]
-        
+
         linkS = []
         for s1 in leftSideSensorS:
             for s2 in rightSideSensorS:
                 linkS.append(RTILink(s1, s2, 0.))
         linkS = tuple(linkS)
-        
+
         return linkS
-    
+
     def getVoxelScenario(self, x_range, y_range):
         if x_range[0] > x_range[1] or y_range[0] > y_range[1]:
             raise ValueError('input must be in form (min, max)')
-        
-        vxS = np.array(list(self.voxelS))
+
+        vxS = np.zeros(self.selection.getShape())
+
         xIdX = self.selection.getXIndexArr(x_range)
         yIdX = self.selection.getYIndexArr(y_range)
-        
-        for i in range(len(xIdX)):
-            for j in range(len(yIdX)):
-                vxS[xIdX[i]][yIdX[j]] = 1.
-                
+
+        vxS[xIdX[0]:(xIdX[1]+1), yIdX[0]:(yIdX[1]+1)] = 1
         return vxS
-                
+
     def getRTIDim(self):
         return (len(self.linkS), self.voxelS())
+
+    def getSetting(self):
+        setting = {}
+        setting['Width'] = self.wa_width
+        setting['Length'] = self.wa_length
+        setting['Sensor Distance'] = self.area_width
+        setting['Sensor Count'] = int(self.n_sensor)
+        setting['Voxel Width'] = self.vx_width
+
+        return setting
