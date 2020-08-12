@@ -10,7 +10,7 @@ from math import floor
 
 
 class Voxel:
-    def __init__(self, idx, width, height, ref_pos):
+    def __init__(self, idx, width, length, ref_pos):
         """
 
 
@@ -34,7 +34,7 @@ class Voxel:
         """
         self.idx = idx
         self.width = width
-        self.height = height
+        self.length = length
         self.ref_pos = ref_pos
 
     def getLeftBound(self):
@@ -47,22 +47,22 @@ class Voxel:
         return self.ref_pos.y
 
     def getUpperBound(self):
-        return self.ref_pos.y + self.height
+        return self.ref_pos.y + self.length
 
     def getLowerLeftCorner(self):
         return [self.ref_pos.x, self.ref_pos.y]
 
     def getUpperLeftCorner(self):
-        return [self.ref_pos.x, self.ref_pos.y + self.height]
+        return [self.ref_pos.x, self.ref_pos.y + self.length]
 
     def getLowerRightCorner(self):
         return [self.ref_pos.x + self.width, self.ref_pos.y]
 
     def getUpperRightCorner(self):
-        return [self.ref_pos.x + self.width, self.ref_pos.y + self.height]
+        return [self.ref_pos.x + self.width, self.ref_pos.y + self.length]
 
     def getArea(self):
-        return self.width * self.height
+        return self.width * self.length
 
 
 class VoxelField:

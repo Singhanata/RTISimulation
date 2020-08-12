@@ -31,7 +31,6 @@ class RTIWeightCalculator(metaclass=ABCMeta):
             wM_out.append(RTIGrid.reshapeVoxelM2Arr(wM_in[i]))
         
         return np.array(wM_out)
-
     
 class LineWeightingRTICalculator(RTIWeightCalculator):
     def __init__(self, scheme):
