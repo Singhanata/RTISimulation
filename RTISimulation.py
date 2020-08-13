@@ -33,8 +33,6 @@ class RTISimulation():
 
         dx = coordX[-1] - coordX[0]
         dy = coordY[-1] - coordY[0]
-        w_x_range = dx/5
-        w_y_range = dy/5
 
         x_range_l = (coordX[0], coordX[0] + dx/5)
         x_range_c = (coordX[0] + 2*dx/5, coordX[0] + 3*dx/5)
@@ -77,13 +75,21 @@ class RTISimulation():
 
         return refInput
 
-    def plotRTIIm(self, iM, title):
-        fig,ax = plt.subplots()
-        hm = ax.imshow(iM, cmap = 'coolwarm', interpolation = 'nearest')
-        ax.set_title(title)
+    def plotRTIIm(self, iM, path, title):
+        sel = self.estimator.weightCalculator.scheme.selection
+
+        coordX = sel.coordX
+        coordY = sel.coordY
+
+        fig,ax = plt.subplots(1,1)
+        hm = ax.imshow(iM,
+                       extent = [coordX[0], coordX[-1], coordY[0], coordY[-1]],
+                       cmap = 'coolwarm',
+                       interpolation = 'nearest')
+        ax.set_title(title, pad=10)
         plt.colorbar(hm)
         plt.grid()
-        fn = title + '.svg'
+        fn = path + '.svg'
         plt.savefig(fn)
         plt.show()
 
@@ -91,10 +97,11 @@ class RTISimulation():
         setting = self.estimator.weightCalculator.scheme.getSetting()
         title_w = f'w@{setting["Width"]}' + ', '
         title_l = f'l@{setting["Length"]}' + ', '
-        title_SD = f'SD@{setting["Sensor Distance"]}' + ', '
-        title_SC = f'SC@{setting["Sensor Count"]}'
+        title_vx = f'VX@{setting["Voxel Width"]}' + ', '
+        title_SC = f'SC@{setting["Sensor Count"]}' + '-'
+        title_SR = f'SR@{setting["Length"]/(setting["Sensor Count"]/2)}'
 
-        return title_w + title_l + title_SD + title_SC
+        return title_w + title_l + title_vx + title_SC + title_SR
 
     def process(self):
         lengtH = np.linspace(10.,100., 10)
@@ -113,7 +120,9 @@ class RTISimulation():
                 if w < l:
                     continue
                 for sr in sensor_ratio:
-                    n = (1/sr)*l
+                    n = int((1/sr) * l * 2)
+                    if n < 4:
+                        continue
                     for vx in vX:
                         rs = SidePositionScheme(Position(0.,0.),
                                                     w,      # area_width
@@ -140,7 +149,8 @@ class RTISimulation():
                                   reshapeVoxelArr2Im(imA,
                                                      selection.getShape()))
                             fn = res_dir + '/' + self.getTitle() + '-' + key
-                            RTISimulation.plotRTIIm(iM, fn)
+                            title = self.getTitle() + '-' + key
+                            self.plotRTIIm(iM, fn, title)
 
 
 
