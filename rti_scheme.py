@@ -285,8 +285,8 @@ class SidePositionScheme(RTIScheme):
         return voxelS, selection
 
     def initSensors(self):
-        if self.n_sensor % 2:
-            TypeError('In a side-position scheme, the total number of sensors \
+        if not (self.n_sensor % 2) == 0:
+            ValueError('In a side-position scheme, the total number of sensors \
                       must be even')
 
         s_distance = self.rtiGrid.y_span / (self.n_sensor/2)

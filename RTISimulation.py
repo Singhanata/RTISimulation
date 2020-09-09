@@ -1,6 +1,6 @@
 from geoutil import Position, RTIGrid
-from rti_scheme import RTIScheme, SidePositionScheme
-from rti_cal import RTIWeightCalculator, LineWeightingRTICalculator
+from rti_scheme import SidePositionScheme
+from rti_cal import LineWeightingRTICalculator
 from rti_estimator import RTIEstimator
 import numpy as np
 import matplotlib.pyplot as plt
@@ -104,7 +104,7 @@ class RTISimulation():
         return title_w + title_l + title_vx + title_SC + title_SR
 
     def process(self):
-        lengtH = np.linspace(10.,100., 10)
+        lengtH = np.linspace(10.,100., 10) 
         widtH = [5, 10, 20, 50, 100]
         sensor_ratio = [0.5, 0.25, 0.1, 1, 2, 4, 10]
         vX = [0.5, 0.25, 0.1, 1]
@@ -117,10 +117,10 @@ class RTISimulation():
             print('Folder ' + res_dir + ' is already exist')
         for l in lengtH:
             for w in widtH:
-                if w < l:
+                if l < w:
                     continue
                 for sr in sensor_ratio:
-                    n = int((1/sr) * l * 2)
+                    n = int((1/sr) * l) * 2
                     if n < 4:
                         continue
                     for vx in vX:
