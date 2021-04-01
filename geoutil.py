@@ -123,7 +123,7 @@ class RTIGrid:
 
     def reshapeVoxelM2Arr(vM):
         vM = np.array(vM)
-        return vM.transpose().reshape(-1).transpose()
+        return vM.transpose().reshape(-1).T
 
 # gr = RTIGrid(6.,10.,1.,1.,Position(0.,0.))
 # V = gr.initVoxels()

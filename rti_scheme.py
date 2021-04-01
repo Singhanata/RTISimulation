@@ -342,3 +342,23 @@ class SidePositionScheme(RTIScheme):
         setting['Voxel Width'] = self.vx_width
 
         return setting
+    
+    def getSensorPosition(self):
+        """
+        Calculation of Sensor Positions for visualization
+
+        Returns
+        -------
+        list of Sensor Positions
+            DESCRIPTION.
+
+        """
+        xls = [s.pos.x for s in self.sensorS[0]]
+        yls = [s.pos.y for s in self.sensorS[0]]
+        xrs = [s.pos.x for s in self.sensorS[1]]
+        yrs = [s.pos.y for s in self.sensorS[1]]
+        
+        xs = xls + xrs
+        ys = yls + yrs
+        
+        return [xs,ys]
