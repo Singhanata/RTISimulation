@@ -1,256 +1,263 @@
-from geoutil import Position, RTIGrid
-from rti_scheme import SidePositionScheme
-from rti_cal import LineWeightingRTICalculator
-from rti_estimator import RTIEstimator
-from rti_eval import RMSEEvaluation as calRMSE
+"""
+Created on Thu Jun  3 18:44:39 2021
+
+@author: krong
+"""
+
 import numpy as np
-import matplotlib.pyplot as plt
+from math import ceil
+
 import os
 from datetime import datetime
 
+from rti_util import Position
+from rti_estimator import RTIEstimator
+from rti_eval import RMSEEvaluation as calRMSE
+from rti_grid import RTIGrid
+from rti_scheme_sideposition import SidePositionScheme
+from rti_scheme_rectangular import RectangularScheme
+from rti_sim_input import simulateInput
+from rti_cal_linesegment import LineWeightingRTICalculator
+from rti_cal_ellipse import EllipseRTICalculator
+from rti_cal_expdecay import ExpDecayRTICalculator
+from rti_cal_invarea import InvAreaRTICalculator
+
+from rti_plot import plotRTIIm, plotSurface
+
 class RTISimulation():
     def __init__(self):
-        pass
-    
-    def calIdealLinkAtten(self, voxelAttenM):
+        tStr = datetime.now().strftime('-%d%m%Y-%H%M%S')
+        res_dir = 'results/results' + tStr
+        os.getcwd()
         try:
-            vxArr = RTIGrid.reshapeVoxelM2Arr(voxelAttenM)
-            linkAttenArr = (self.
-                            estimator.
-                            weightCalculator.
-                            calIdealLinkAtten(vxArr))
-            return linkAttenArr
-        except ValueError:
-            raise ValueError('Dimension mismatch.')
+            os.mkdir(res_dir)
+        except:
+            print('Folder ' + res_dir + ' is already exist')
+        self.res_dir = res_dir
 
-    def simulateReferenceInput(self):
-        scheme = self.estimator.weightCalculator.scheme
+    def getTitle(self, delimiter=','):
+        setting = self.estimator.weightCalculator.getSetting()
+        title_w = f'w@{setting["Width"]}' + delimiter
+        title_l = f'l@{setting["Length"]}' + delimiter
+        title_vx = f'VX@{setting["Voxel Width"]}' + delimiter
+        title_SC = f'SC@{setting["Sensor Count"]}' + '-'
+        title_SR = f'SR@{setting["Length"]/(setting["Sensor Count"]/2)}' + delimiter
+        title_sch = setting['scheme'] + '-'
+        title_cal = setting['WeightAlgorithm']
 
-        coordX = scheme.selection.coordX
-        coordY = scheme.selection.coordY
+        return (title_w + title_l +
+                title_vx + title_SC + title_SR + title_sch + title_cal)
 
-        dx = coordX[-1] - coordX[0]
-        dy = coordY[-1] - coordY[0]
+    def process_routine(self, **kw):
+        l_area = 10
+        if 'l_area' in kw:
+            l_area = kw['l_area']
+        w_area = 10
+        if 'w_area' in kw:
+            w_area = kw['w_area']
+        vx_dim = 0.5
+        if 'vx_dim' in kw:
+            vx_dim = kw['vx_dim']
+        n_sensor = 20
+        if 'n_sensor' in kw:
+            n_sensor = kw['n_sensor']
+        ref_pos = Position(0., 0.)
+        if 'ref_pos' in kw:
+            ref_pos = kw['ref_pos']
+        schemeType = 'SW'
+        if 'schemeType' in kw:
+            schemeType = kw['schemeType']
+        weightalgorithm = 'EL'
+        if 'weightalgorithm' in kw:
+            weightalgorithm = kw['weightalgorithm']
 
-        x_range_l = (coordX[0], coordX[0] + dx/5)
-        x_range_c = (coordX[0] + 2*dx/5, coordX[0] + 3*dx/5)
-        x_range_r = (coordX[0] + 4*dx/5, coordX[0] + 5*dx/5)
+        if schemeType == 'SW':
+            self.scheme = SidePositionScheme(ref_pos,
+                                             w_area,      # area_width
+                                             l_area,      # area_length
+                                             vx_dim,      # vx_width
+                                             vx_dim,      # vx_length
+                                             w_area,      # wa_width
+                                             l_area,      # wa_length
+                                             n_sensor)    # n_sensor
+        elif schemeType == 'RE':
+            self.scheme = RectangularScheme(ref_pos,
+                                            w_area,      # area_width
+                                            l_area,      # area_length
+                                            vx_dim,      # vx_width
+                                            vx_dim,      # vx_length
+                                            w_area,      # wa_width
+                                            l_area,      # wa_length
+                                            n_sensor)    # n_sensor
+        else:
+            ValueError('Scheme Type not exist')
 
-        y_range_b = (coordY[0], coordY[0] + dy/5)
-        y_range_c = (coordY[0] + 2*dy/5, coordY[0] + 3*dy/5)
-        y_range_t = (coordY[0] + 4*dy/5, coordY[0] + 5*dy/5)
+        if weightalgorithm == 'LS':
+            if 'cal_mode' in kw:
+                self.calculator = LineWeightingRTICalculator(self.scheme,
+                                                             kw['cal_mode'])
+            else:
+                self.calculator = LineWeightingRTICalculator(self.scheme)
+        elif weightalgorithm == 'EL':
+            if 'lambda_coeff' in kw:
+                self.calculator = EllipseRTICalculator(self.scheme,
+                                                       kw['lambda_coeff'])
+            else:
+                self.calculator = EllipseRTICalculator(self.scheme)
+        elif weightalgorithm == 'EX':
+            if 'sigma_w' in kw:
+                self.calculator = ExpDecayRTICalculator(self.scheme,
+                                                        kw['sigma_w'])
+            else:
+                self.calculator = ExpDecayRTICalculator(self.scheme)
+        elif weightalgorithm == 'IN':
+            if 'lambda_min' in kw:
+                self.calculator = InvAreaRTICalculator(self.scheme,
+                                                       kw['lambda_min'])
+            else:
+                self.calculator = InvAreaRTICalculator(self.scheme)
+        else:
+            ValueError('Weighting Algorithm not exist')
 
-        vxS_lb = scheme.getVoxelScenario(x_range_l, y_range_b)
-        vxS_cb = scheme.getVoxelScenario(x_range_c, y_range_b)
-        vxS_rb = scheme.getVoxelScenario(x_range_r, y_range_b)
-        vxS_lc = scheme.getVoxelScenario(x_range_l, y_range_c)
-        vxS_cc = scheme.getVoxelScenario(x_range_c, y_range_c)
-        vxS_rc = scheme.getVoxelScenario(x_range_r, y_range_c)
-        vxS_lt = scheme.getVoxelScenario(x_range_l, y_range_t)
-        vxS_ct = scheme.getVoxelScenario(x_range_c, y_range_t)
-        vxS_rt = scheme.getVoxelScenario(x_range_r, y_range_t)
+        if 'alpha' in kw:
+            self.estimator = RTIEstimator(self.calculator,
+                                          kw['alpha'])
+        else:
+            self.estimator = RTIEstimator(self.calculator)
 
-        l_lb = self.calIdealLinkAtten(vxS_lb)
-        l_cb = self.calIdealLinkAtten(vxS_cb)
-        l_rb = self.calIdealLinkAtten(vxS_rb)
-        l_lc = self.calIdealLinkAtten(vxS_lc)
-        l_cc = self.calIdealLinkAtten(vxS_cc)
-        l_rc = self.calIdealLinkAtten(vxS_rc)
-        l_lt = self.calIdealLinkAtten(vxS_lt)
-        l_ct = self.calIdealLinkAtten(vxS_ct)
-        l_rt = self.calIdealLinkAtten(vxS_rt)
+        res_folder = self.res_dir + '/' + self.getTitle('_')
+        try:
+            os.mkdir(res_folder)
+        except:
+            print('Folder ' + res_folder + ' is already exist')
 
-        refInput = {}
-        refInput['lb'] = [l_lb, vxS_lb]
-        refInput['cb'] = [l_cb, vxS_cb]
-        refInput['rb'] = [l_rb, vxS_rb]
-        refInput['lc'] = [l_lc, vxS_lc]
-        refInput['cc'] = [l_cc, vxS_cc]
-        refInput['rc'] = [l_rc, vxS_rc]
-        refInput['lt'] = [l_lt, vxS_lt]
-        refInput['ct'] = [l_ct, vxS_ct]
-        refInput['rt'] = [l_rt, vxS_rt]
+        return res_folder
 
-        return refInput
-    
-    def simulateInput(self, formSet, objXLength, objYLength):
+    def process_showPositionFactor(self):
         """
-        Parameters
-        ----------
-        form_set : String
-            'centre' stand at the center of the area
-            'Left' stand at the left side
-            ...
-            'Pass Center' Moving through the center
-        objWidth : Numerical
-            DESCRIPTION.
-        objLength : Numerical
-            DESCRIPTION.
+        This process investigates all possible position of an rectangular object
+        in the detection area.
 
         Returns
         -------
         None.
 
         """
-        scheme = self.estimator.weightCalculator.scheme
 
-        coordX = scheme.selection.coordX
-        coordY = scheme.selection.coordY
-        
-        dx = coordX[-1] - coordX[0]
-        dy = coordY[-1] - coordY[0]
+        s_graphic = False
+        s_rec = False
+        s_surface = False
 
-        if formSet == 'center':
-
-            center_x = coordX[0] + dx/2
-            center_y = coordY[0] + dy/2
-        
-            x_range = (center_x - objXLength/2, center_x + objXLength/2)
-            y_range = (center_y - objYLength/2, center_y + objYLength/2)
-        
-            vxS = scheme.getVoxelScenario(x_range, y_range)
-            l_Atten = self.calIdealLinkAtten(vxS)
-            
-            refInput = {}
-            refInput['center'] = l_Atten
-            
-            return refInput
-        return self.simulateReferenceInput()
-
-    def plotRTIIm(self, iM, sensorPostion, path, title, rmse):
-        sel = self.estimator.weightCalculator.scheme.selection
-
-        coordX = sel.coordX
-        coordY = sel.coordY
-
-        fig,ax = plt.subplots(1,1)
-        hm = ax.imshow(iM.T,
-                       extent = [coordX[0], coordX[-1], coordY[0], coordY[-1]],
-                       cmap = 'coolwarm',
-                       origin = 'lower',
-                       interpolation = 'nearest',
-                       vmin = 0)
-        ax.set_title(title, pad=10)
-        ax.set_xlabel('RMSE =' + str(rmse))
-        plt.colorbar(hm)
-        plt.scatter(sensorPostion[0], sensorPostion[1], s=200, c = 'black')
-        plt.grid()
-        fn = path + '.svg'
-        plt.savefig(fn)
-        plt.show()
-
-    def getTitle(self):
-        setting = self.estimator.weightCalculator.scheme.getSetting()
-        title_w = f'w@{setting["Width"]}' + ', '
-        title_l = f'l@{setting["Length"]}' + ', '
-        title_vx = f'VX@{setting["Voxel Width"]}' + ', '
-        title_SC = f'SC@{setting["Sensor Count"]}' + '-'
-        title_SR = f'SR@{setting["Length"]/(setting["Sensor Count"]/2)}'
-
-        return title_w + title_l + title_vx + title_SC + title_SR
-
-    def process_default(self):
-        lengtH = np.linspace(10.,100., 10)  # Lenght in [m]
-        widtH = [5, 10, 20, 50, 100]        # Width in [m]
-        sensor_ratio = [0.5, 0.25, 0.1, 1, 2, 4, 10]    # Lenght/Sensor in [m/unit]
-        vX = [0.5, 0.25, 0.1, 1]            # Voxel Length in [m]
-        tStr = datetime.now().strftime('-%d%m%Y-%H%M%S')
-        res_dir ='results' + tStr
-        os.getcwd()
-        try:
-            os.mkdir(res_dir)
-        except:
-            print('Folder ' + res_dir + ' is already exist')
-        for l in lengtH:
-            for w in widtH:
-                if l < w:
-                    continue
-                for sr in sensor_ratio:
-                    n = int((1/sr) * l) * 2
-                    if n < 4:
-                        continue
-                    for vx in vX:
-                        rs = SidePositionScheme(Position(0.,0.),
-                                                    w,      # area_width
-                                                    l,      # area_length
-                                                    vx,     # vx_width
-                                                    vx,     # vx_length
-                                                    n,      # n_sensor
-                                                    w,      # wa_width
-                                                    l)      # wa_length
-                        rc = LineWeightingRTICalculator(rs)
-                        re = RTIEstimator(rc, 1.)
-                        self.estimator = re
-                        selection = (self.
-                                     estimator.
-                                     weightCalculator.
-                                     scheme.
-                                     selection)
-                        refInput = self.simulateReferenceInput()
-                        for key, value in refInput.items():
-                            imA = (self.
-                                   estimator.
-                                   calVoxelAtten(value[0]))
-                            iM = (RTIGrid.
-                                  reshapeVoxelArr2Im(imA,
-                                                     selection.getShape()))
-                            fn = res_dir + '/' + self.getTitle() + '-' + key
-                            rmse = calRMSE(value[1], iM)
-                            title = self.getTitle() + '-' + key 
-                        
-                            sP = rs.getSensorPosition() 
- 
-                            self.plotRTIIm(iM, sP, fn, title, rmse)
-                            
-    def process_scenario(self):
-        l_area = 10
-        w_area = 6
-        vx_dim = 1
-        n_sensor = 20
         obj_dim_x = 4
-        obj_dim_y = 2
-        
-        tStr = datetime.now().strftime('-%d%m%Y-%H%M%S')
-        res_dir ='results' + tStr
-        os.getcwd()
+        obj_dim_y = 4
+
+        fdn = self.process_routine(l_area=10,
+                                   w_area=10,
+                                   vx_dim=0.5,
+                                   n_sensor=20,
+                                   schemeType='SW',
+                                   weightalgorithm='EL')
+
+        end_nx = ceil(obj_dim_x / self.scheme.vx_width)
+        end_ny = ceil(obj_dim_y / self.scheme.vx_length)
+
+        x_exp_coorD = np.asarray(self.scheme.coordX[0:-end_nx])
+        y_exp_coorD = np.asarray(self.scheme.coordY[0:-end_ny])
+
+        c_rmse = np.zeros((len(x_exp_coorD), len(y_exp_coorD)))
+        shape = self.scheme.getShape()
+
+        fn_fig = fdn + '/fig'
         try:
-            os.mkdir(res_dir)
+            os.mkdir(fn_fig)
         except:
-            print('Folder ' + res_dir + ' is already exist')
-        rs = SidePositionScheme(Position(0.,0.),
-                                w_area,      # area_width
-                                l_area,      # area_length
-                                vx_dim,     # vx_width
-                                vx_dim,     # vx_length
-                                n_sensor,      # n_sensor
-                                w_area,      # wa_width
-                                l_area)      # wa_length
-        rc = LineWeightingRTICalculator(rs)
-        re = RTIEstimator(rc, 1.)
-        self.estimator = re
-        selection = (self.
-                     estimator.
-                     weightCalculator.
-                     scheme.
-                     selection)
-        refInput = self.simulateInput('center', obj_dim_x, obj_dim_y)
-        for key, value in refInput.items():
-            imA = (self.
-                   estimator.
-                   calVoxelAtten(value[0]))
-            iM = (RTIGrid.
-                  reshapeVoxelArr2Im(imA,
-                                     selection.getShape()))
-            fn = res_dir + '/' + self.getTitle() + '-' + key
-            rmse = calRMSE(value[1], iM)
-            title = self.getTitle() + '-' + key                        
-            sP = rs.getSensorPosition()
+            print('Folder ' + fn_fig + ' is already exist')
+        fn_fig += '/' + self.getTitle()
+
+        fn_rec = fdn + '/rec'
+        try:
+            os.mkdir(fn_rec)
+        except:
+            print('Folder ' + fn_rec + ' is already exist')
+        fn_con = fdn + '/conc'
+        try:
+            os.mkdir(fn_con)
+        except:
+            print('Folder ' + fn_con + ' is already exist')
+
+        pre_fn = self.getTitle()
+
+        for i in range(len(x_exp_coorD)):
+            for j in range(len(y_exp_coorD)):
+                x = x_exp_coorD[i]
+                y = y_exp_coorD[j]
+
+                refInput = simulateInput(self.scheme,
+                                         self.calculator,
+                                         (x, y),
+                                         (obj_dim_x, obj_dim_y))
+                for key, value in refInput.items():
+                    imA = (self.estimator.calVoxelAtten(value[0]))
+                    iM = (RTIGrid.reshapeVoxelArr2Im(imA, shape))
+                    rmse = calRMSE(value[1], iM)
+                    c_rmse[i][j] = rmse
+
+                    if s_graphic:
+                        fn_f = fn_fig + '-' + key
+                        title = pre_fn + '-' + key
+                        plotRTIIm(self.scheme,
+                                  iM, 
+                                  path = fn_f,
+                                  title = title, 
+                                  label = 'Rel. Attenuation',  
+                                  rmse = rmse)
+                    if s_rec:
+                        fn_r = fn_rec + '/' + key
+                        try:
+                            os.mkdir(fn_r)
+                        except:
+                            print('Folder ' + fn_r + ' is already exist')
+
+                        fn_rx = fn_r + '/x.csv'
+                        fn_ry = fn_r + '/y.csv'
+                        fn_ref = fn_r + '/ref.csv'
+                        fn_res = fn_r + '/res.csv'
+                        fn_rmse = fn_r + '/rmse.csv'
+
+                        np.savetxt(fn_rx, x_exp_coorD, delimiter=',')
+                        np.savetxt(fn_ry, y_exp_coorD, delimiter=',')
+                        np.savetxt(fn_ref, value[1], delimiter=',')
+                        np.savetxt(fn_res, iM, delimiter=',')
+                        with open(fn_rmse, 'w') as f:
+                            f.write(pre_fn + '\nRMSE = ' + str(rmse))
+
+        x_exp_coorD = [x + obj_dim_x/2 for x in x_exp_coorD]
+        y_exp_coorD = [y + obj_dim_y/2 for y in y_exp_coorD]
+
+        obj_dim_txt = 'obj(' + str(obj_dim_x) + ',' + str(obj_dim_y) + ')'
+        fn_cx = fn_con + '/' + obj_dim_txt + '_X_PosExp.csv'
+        fn_cy = fn_con + '/' + obj_dim_txt + '_Y_PosExp.csv'
+        fn_crmse = fn_con + '/' + obj_dim_txt + '_RMSE_PosExp.csv'
+        fn_cg = fn_con + '/' + obj_dim_txt + '_RMSE_PosExp'
+
+        np.savetxt(fn_cx, x_exp_coorD, delimiter=',')
+        np.savetxt(fn_cy, y_exp_coorD, delimiter=',')
+        np.savetxt(fn_crmse, c_rmse, delimiter=',')
+
+        title = (pre_fn +
+                 '-' + obj_dim_txt + '-RMSE')
+        plotRTIIm(self.scheme,
+                  c_rmse,
+                  path = fn_cg,
+                  title = title, 
+                  label = 'RMSE',  
+                  color = 'tab20')
+        
+        if s_surface:
+            plotSurface(self.scheme,
+                          c_rmse,
+                          path = fn_cg,
+                          title = title, 
+                          label = 'RMSE',  
+                          color = 'tab20')
             
-            self.plotRTIIm(iM, sP, fn, title, rmse)
-                    
-        
-        
-        
-
-
-

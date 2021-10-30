@@ -4,7 +4,6 @@ Created on Thu Aug  6 15:15:26 2020
 
 @author: krong
 """
-from rti_cal import RTIWeightCalculator
 import numpy as np
 import sys
 
@@ -27,8 +26,7 @@ class RTIEstimator():
         self.__weightingMT = wMT
 
     def initEstimator(self, alpha):
-        weightingM = RTIWeightCalculator.transformWeightingM(self.weightCalculator
-                                                      .weightingM)
+        weightingM = self.weightCalculator.weightingM
         weightingM_2 = RTIEstimator.calPower2M(weightingM)
         coeffM = weightingM_2
 
@@ -48,8 +46,7 @@ class RTIEstimator():
     def calDiffCoefficientM(self):
         diffM_X, diffM_Y = RTIEstimator.buildDiffM(self.
                                                    weightCalculator.
-                                                   weightingM[0].
-                                                   shape)
+                                                   getShape())
         diffM_X_2 = RTIEstimator.calPower2M(diffM_X)
         diffM_Y_2 = RTIEstimator.calPower2M(diffM_Y)
 
