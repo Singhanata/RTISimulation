@@ -57,7 +57,7 @@ def calDerivative(iM, **kw):
     return convolve2D(iM, kernel)
 
 def convolve2D(iM, kernel, **kw):
-    padDir = 'c'
+    padDir = 'f'
     if 'paddingDirection' in kw:
         padDir = kw['paddingDirection']
     
@@ -67,14 +67,64 @@ def convolve2D(iM, kernel, **kw):
     iM_x = iM.shape[0]
     iM_y = iM.shape[1]
 
-    temP = np.zeros((iM_x+(k_x-1), iM_y+(k_y-1)))
-    if padDir == 'c':
-    temP[1:1+iM_x, 1:1+iM_y] = iM
-    temP[:,0] = temP[:,0]
-    temP[:,-1] = temP[:,-2]
-    temP[0] = temP[1]
-    temP[-1] = temP[-2]
+    padSize_x = k_x-1
+    padSize_y = k_y-1
+    
+    temP = np.zeros((iM_x+padSize_x, iM_y+padSize_y))
 
+    begin_x = 0
+    end_x = 0
+    begin_y = 0
+    end_y = 0
+    
+    if padDir == 'c':
+        if (padSize_x%2 or padSize_y%2):
+            raise ValueError('Padding is not symmetric')
+        padSize_x = padSize_x/2
+        padSize_y = padSize_y/2
+        
+        temP[1:1+iM_x, 1:1+iM_y] = iM
+        begin_x = 1
+        end_x = 1+iM_x
+        begin_y = 1
+        end_y = 1+iM_y
+        for i in range(padSize_x):
+            temP[:,i] = temP[:,padSize_x]
+            idx = i+1
+            temP[:,-idx] = temP[:,-(padSize_x+1)]
+        for i in range(padSize_y):
+            temP[i] = temP[padSize_y]
+            idx = i+1
+            temP[-1] = temP[-(padSize_y+1)]
+    elif padDir == 'b':
+        temP[padSize_x:iM_x + padSize_x, padSize_y:iM_y + padSize_y] = iM
+        begin_x = padSize_x
+        end_x = padSize_x+iM_x
+        begin_y = padSize_y
+        end_y = padSize_y+iM_y
+        for i in range(padSize_x):
+            temP[:,i] = temP[:,padSize_x]
+        for i in range(padSize_y):    
+            temP[i] = temP[padSize_y]
+    elif padDir == 'f':
+        temP[0:iM_x, 0:iM_y] = iM
+        begin_x = 0
+        end_x = iM_x
+        begin_y = 0
+        end_y = iM_y
+        for i in range(padSize_y):
+            idx = i+1
+            temP[:,-idx] = temP[:,-(padSize_y+1)]
+        for i in range(padSize_y):    
+            temP[-(i+1)] = temP[-(padSize_y+1)]
+    else:
+        raise ValueError('Padding direction not defined')
+        
+    output = np.zeros((iM.shape[0], iM.shape[1]))
+    for x in range(iM_x):
+        for y in range(iM_y): 
+            output[x,y] = (kernel * temP[x:x+k_x, y:y+k_y])
+        
 
 
 
