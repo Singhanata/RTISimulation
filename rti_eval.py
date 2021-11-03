@@ -57,13 +57,18 @@ def calDerivative(iM, **kw):
     return convolve2D(iM, kernel)
 
 def convolve2D(iM, kernel, **kw):
+    padDir = 'c'
+    if 'paddingDirection' in kw:
+        padDir = kw['paddingDirection']
+    
     k_x = kernel.shape[0]
     k_y = kernel.shape[1]
 
     iM_x = iM.shape[0]
     iM_y = iM.shape[1]
 
-    temP = np.zeros((iM_x+2, iM_y+2))
+    temP = np.zeros((iM_x+(k_x-1), iM_y+(k_y-1)))
+    if padDir == 'c':
     temP[1:1+iM_x, 1:1+iM_y] = iM
     temP[:,0] = temP[:,0]
     temP[:,-1] = temP[:,-2]
