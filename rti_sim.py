@@ -199,8 +199,8 @@ class RTISimulation():
                 for key, value in refInput.items():
                     imA = (self.estimator.calVoxelAtten(value[0]))
                     iM = (RTIGrid.reshapeVoxelArr2Im(imA, shape))
-                    rmse = calRMSE(value[1], iM)
-                    c_rmse[i][j] = rmse
+                    r = calRMSE(value[1], iM)
+                    c_rmse[i][j] = r['rsme_all']
 
                     if s_graphic:
                         fn_f = fn_fig + '-' + key
@@ -210,7 +210,7 @@ class RTISimulation():
                                   path = fn_f,
                                   title = title, 
                                   label = 'Rel. Attenuation',  
-                                  rmse = rmse)
+                                  rmse = r['rsme_all'])
                     if s_rec:
                         fn_r = fn_rec + '/' + key
                         try:
@@ -229,7 +229,7 @@ class RTISimulation():
                         np.savetxt(fn_ref, value[1], delimiter=',')
                         np.savetxt(fn_res, iM, delimiter=',')
                         with open(fn_rmse, 'w') as f:
-                            f.write(pre_fn + '\nRMSE = ' + str(rmse))
+                            f.write(pre_fn + '\nRMSE = ' + str(r['rsme_all']))
 
         x_exp_coorD = [x + obj_dim_x/2 for x in x_exp_coorD]
         y_exp_coorD = [y + obj_dim_y/2 for y in y_exp_coorD]
