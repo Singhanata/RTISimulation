@@ -13,6 +13,7 @@ from datetime import datetime
 from rti_util import Position
 from rti_estimator import RTIEstimator
 from rti_eval import RMSEEvaluation as calRMSE
+from rti_eval import derivativeEval as calDerivative
 from rti_grid import RTIGrid
 from rti_scheme_sideposition import SidePositionScheme
 from rti_scheme_rectangular import RectangularScheme
@@ -22,7 +23,7 @@ from rti_cal_ellipse import EllipseRTICalculator
 from rti_cal_expdecay import ExpDecayRTICalculator
 from rti_cal_invarea import InvAreaRTICalculator
 
-from rti_plot import plotRTIIm, plotSurface
+from rti_plot import plotRTIIm, plotSurface, plotDerivative
 
 class RTISimulation():
     def __init__(self):
@@ -145,7 +146,7 @@ class RTISimulation():
         """
 
         s_graphic = False
-        s_rec = False
+        s_rec = True
         s_surface = False
 
         obj_dim_x = 4
@@ -156,10 +157,13 @@ class RTISimulation():
                                    vx_dim=0.5,
                                    n_sensor=20,
                                    schemeType='SW',
-                                   weightalgorithm='EL')
+                                   weightalgorithm='EX')
 
         end_nx = ceil(obj_dim_x / self.scheme.vx_width)
         end_ny = ceil(obj_dim_y / self.scheme.vx_length)
+        
+        c_offset_x = ceil(end_nx/2)
+        c_offset_y = ceil(end_ny/2)
 
         x_exp_coorD = np.asarray(self.scheme.coordX[0:-end_nx])
         y_exp_coorD = np.asarray(self.scheme.coordY[0:-end_ny])
@@ -191,6 +195,9 @@ class RTISimulation():
             for j in range(len(y_exp_coorD)):
                 x = x_exp_coorD[i]
                 y = y_exp_coorD[j]
+                
+                c_x_idx = i + c_offset_x
+                c_y_idx = j + c_offset_y
 
                 refInput = simulateInput(self.scheme,
                                          self.calculator,
@@ -200,6 +207,9 @@ class RTISimulation():
                     imA = (self.estimator.calVoxelAtten(value[0]))
                     iM = (RTIGrid.reshapeVoxelArr2Im(imA, shape))
                     r = calRMSE(value[1], iM)
+                    de = calDerivative(value[1], 
+                                       iM, 
+                                       indexOfInterest = (c_x_idx, c_y_idx))
                     c_rmse[i][j] = r['rsme_all']
 
                     if s_graphic:
@@ -211,6 +221,15 @@ class RTISimulation():
                                   title = title, 
                                   label = 'Rel. Attenuation',  
                                   rmse = r['rsme_all'])
+                        plotDerivative(self.scheme,
+                                       de,
+                                       path = fn_f,
+                                       title = title,
+                                       label = 'Derivative by X',
+                                       caption = 'obj. derivative@' 
+                                       + str(de['obj-derivative']) + ', '
+                                       + 'non. derivative@' 
+                                       + str(de['non-derivative']))
                     if s_rec:
                         fn_r = fn_rec + '/' + key
                         try:
@@ -222,15 +241,35 @@ class RTISimulation():
                         fn_ry = fn_r + '/y.csv'
                         fn_ref = fn_r + '/ref.csv'
                         fn_res = fn_r + '/res.csv'
-                        fn_rmse = fn_r + '/rmse.csv'
+                        fn_info = fn_r + '/info.csv'
+                        fn_der_x = fn_r + '/derivative_x.csv'
+                        fn_der_x_interest = (fn_r + '/derivative_x@' 
+                                             + str(x + obj_dim_x/2) 
+                                             + '.csv') 
+                        fn_der_y = fn_r + '/derivative_y.csv'
+                        fn_der_y_interest = (fn_r + '/derivative_y@' 
+                                             + str(y + obj_dim_y/2) 
+                                             + '.csv') 
+                        fn_der_abs = fn_r + '/derivative_abs.csv'
 
                         np.savetxt(fn_rx, x_exp_coorD, delimiter=',')
                         np.savetxt(fn_ry, y_exp_coorD, delimiter=',')
                         np.savetxt(fn_ref, value[1], delimiter=',')
                         np.savetxt(fn_res, iM, delimiter=',')
-                        with open(fn_rmse, 'w') as f:
-                            f.write(pre_fn + '\nRMSE = ' + str(r['rsme_all']))
-
+                        np.savetxt(fn_der_x, de['x'],delimiter=',')
+                        np.savetxt(fn_der_x_interest, de['x_interest'], 
+                                   delimiter=',')
+                        np.savetxt(fn_der_y, de['y'],delimiter=',')
+                        np.savetxt(fn_der_y_interest, de['y_interest'], 
+                                   delimiter=',')
+                        np.savetxt(fn_der_abs, de['abs'],delimiter=',')
+                        with open(fn_info, 'w') as f:
+                            f.write(pre_fn + '\nRMSE = ' + str(r['rsme_all'])
+                        + '\nAVG. OBJ. RSME ,' + str(r['rsme_obj'])
+                        + '\nAVG. NON. RSME ,' + str(r['rsme_non'])
+                        + '\nAVG. OBJ. Attenuation ,' + str(r['obj_mean'])
+                        + '\nAVG. NON. Attenuation ,' + str(r['non_mean'])
+                        + '\nAVG.')
         x_exp_coorD = [x + obj_dim_x/2 for x in x_exp_coorD]
         y_exp_coorD = [y + obj_dim_y/2 for y in y_exp_coorD]
 

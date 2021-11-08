@@ -50,14 +50,19 @@ def RMSEEvaluation(reF, reS, **kw):
 def derivativeEval(reF, reS, **kw):
     results = {}
 
+    idx_obJ = (reF==1)
+    idx_noN = (reF==0)
+
     question = ''
     if 'question' in kw:
-        question = kw['question']
+        question = kw['question'] 
 
     if not question:
         results['x'] = calDerivative(reS, axis='x')
         results['y'] = calDerivative(reS, axis='y')
         results['abs'] = math.sqrt(results['x']**2 + results['y']**2)
+        results['obj-derivative'] = results['abs'][idx_obJ].mean()
+        results['non-derivative'] = results['abs'][idx_noN].mean()        
         results['tan'] = results['y']/results['x']
     elif question == 'x':
         results['x'] = calDerivative(reS, axis='x')
@@ -65,6 +70,12 @@ def derivativeEval(reF, reS, **kw):
         results['y'] = calDerivative(reS, axis='y')
     else:
         raise ValueError('question is not defined')
+    
+    if 'indexOfInterest' in kw:
+        a_x = kw['indexOfInterest'][0]
+        a_y = kw['indexOfInterest'][1]
+        results['x_interest'] = results['x'][a_x,:]
+        results['y_interest'] = results['y'][:,a_y]
     return results
 
 def calDerivative(iM, **kw):
