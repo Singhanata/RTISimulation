@@ -36,15 +36,25 @@ class RTISimulation():
             print('Folder ' + res_dir + ' is already exist')
         self.res_dir = res_dir
 
-    def getTitle(self, delimiter=','):
-        setting = self.estimator.weightCalculator.getSetting()
-        title_w = f'w@{setting["Width"]}' + delimiter
-        title_l = f'l@{setting["Length"]}' + delimiter
-        title_vx = f'VX@{setting["Voxel Width"]}' + delimiter
-        title_SC = f'SC@{setting["Sensor Count"]}' + '-'
-        title_SR = f'SR@{setting["Length"]/(setting["Sensor Count"]/2)}' + delimiter
-        title_sch = setting['scheme'] + '-'
-        title_cal = setting['WeightAlgorithm']
+    def getTitle(self, delimiter=',', short = False):
+        if short:
+            setting = self.estimator.weightCalculator.getSetting()
+            title_w = f'w{setting["Width"]}' + delimiter
+            title_l = f'l{setting["Length"]}' + delimiter
+            title_vx = f'VX{setting["Voxel Width"]}' + delimiter
+            title_SC = f'SC{setting["Sensor Count"]}' 
+            title_SR = delimiter
+            title_sch = setting['scheme'] + '-'
+            title_cal = setting['WeightAlgorithm']
+        else:
+            setting = self.estimator.weightCalculator.getSetting()
+            title_w = f'w@{setting["Width"]}' + delimiter
+            title_l = f'l@{setting["Length"]}' + delimiter
+            title_vx = f'VX@{setting["Voxel Width"]}' + delimiter
+            title_SC = f'SC@{setting["Sensor Count"]}' + '-'
+            title_SR = f'SR@{setting["Length"]/(setting["Sensor Count"]/2)}' + delimiter
+            title_sch = setting['scheme'] + '-'
+            title_cal = setting['WeightAlgorithm']
 
         return (title_w + title_l +
                 title_vx + title_SC + title_SR + title_sch + title_cal)
@@ -126,7 +136,7 @@ class RTISimulation():
         else:
             self.estimator = RTIEstimator(self.calculator)
 
-        res_folder = self.res_dir + '/' + self.getTitle('_')
+        res_folder = self.res_dir + '/' + self.getTitle('', True)
         try:
             os.mkdir(res_folder)
         except:
@@ -145,7 +155,7 @@ class RTISimulation():
 
         """
 
-        s_graphic = False
+        s_graphic = True
         s_rec = True
         s_surface = False
 
@@ -189,7 +199,7 @@ class RTISimulation():
         except:
             print('Folder ' + fn_con + ' is already exist')
 
-        pre_fn = self.getTitle()
+        pre_fn = self.getTitle('', True)
 
         for i in range(len(x_exp_coorD)):
             for j in range(len(y_exp_coorD)):
@@ -210,7 +220,7 @@ class RTISimulation():
                     de = calDerivative(value[1], 
                                        iM, 
                                        indexOfInterest = (c_x_idx, c_y_idx))
-                    c_rmse[i][j] = r['rsme_all']
+                    c_rmse[i][j] = r['rmse_all']
 
                     if s_graphic:
                         fn_f = fn_fig + '-' + key
@@ -218,9 +228,9 @@ class RTISimulation():
                         plotRTIIm(self.scheme,
                                   iM, 
                                   path = fn_f,
-                                  title = title, 
+                                  title = self.getTitle(), 
                                   label = 'Rel. Attenuation',  
-                                  rmse = r['rsme_all'])
+                                  rmse = r['rmse_all'])
                         plotDerivative(self.scheme,
                                        de,
                                        path = fn_f,
@@ -264,9 +274,9 @@ class RTISimulation():
                                    delimiter=',')
                         np.savetxt(fn_der_abs, de['abs'],delimiter=',')
                         with open(fn_info, 'w') as f:
-                            f.write(pre_fn + '\nRMSE = ' + str(r['rsme_all'])
-                        + '\nAVG. OBJ. RSME ,' + str(r['rsme_obj'])
-                        + '\nAVG. NON. RSME ,' + str(r['rsme_non'])
+                            f.write(pre_fn + '\nRMSE = ' + str(r['rmse_all'])
+                        + '\nAVG. OBJ. RMSE ,' + str(r['rmse_obj'])
+                        + '\nAVG. NON. RMSE ,' + str(r['rmse_non'])
                         + '\nAVG. OBJ. Attenuation ,' + str(r['obj_mean'])
                         + '\nAVG. NON. Attenuation ,' + str(r['non_mean'])
                         + '\nAVG.')

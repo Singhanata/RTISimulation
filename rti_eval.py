@@ -60,10 +60,9 @@ def derivativeEval(reF, reS, **kw):
     if not question:
         results['x'] = calDerivative(reS, axis='x')
         results['y'] = calDerivative(reS, axis='y')
-        results['abs'] = math.sqrt(results['x']**2 + results['y']**2)
+        results['abs'] = np.sqrt(results['x']**2 + results['y']**2)
         results['obj-derivative'] = results['abs'][idx_obJ].mean()
         results['non-derivative'] = results['abs'][idx_noN].mean()        
-        results['tan'] = results['y']/results['x']
     elif question == 'x':
         results['x'] = calDerivative(reS, axis='x')
     elif question == 'y':
@@ -74,8 +73,8 @@ def derivativeEval(reF, reS, **kw):
     if 'indexOfInterest' in kw:
         a_x = kw['indexOfInterest'][0]
         a_y = kw['indexOfInterest'][1]
-        results['x_interest'] = results['x'][a_x,:]
-        results['y_interest'] = results['y'][:,a_y]
+        results['x_interest'] = results['x'][:,a_x]
+        results['y_interest'] = results['y'][a_y,:]
     return results
 
 def calDerivative(iM, **kw):
@@ -100,9 +99,9 @@ def calDerivative(iM, **kw):
         raise ValueError('derivative direction is not defined')
 
     if axis == 'x':
-        kernel = kernel.T
-    elif axis == 'y':
         pass
+    elif axis == 'y':
+        kernel = kernel.T
     else:
         raise ValueError('axis of derivative is not defined')
 
@@ -151,18 +150,19 @@ def convolve2D(iM, kernel, **kw):
     if padDir == 'c':
         if (padSize_x%2 or padSize_y%2):
             raise ValueError('Padding is not symmetric')
-        padSize_x = padSize_x/2
-        padSize_y = padSize_y/2
+        padSize_x = int(padSize_x/2)
+        padSize_y = int(padSize_y/2)
         
-        temP[1:1+iM_x, 1:1+iM_y] = iM
+        temP[padSize_x:padSize_x
+             +iM_x, padSize_y:padSize_y+iM_y] = iM
         for i in range(padSize_x):
-            temP[:,i] = temP[:,padSize_x]
+            temP[i] = temP[padSize_x]
             idx = i+1
-            temP[:,-idx] = temP[:,-(padSize_x+1)]
+            temP[-idx] = temP[-(padSize_x+1)]
         for i in range(padSize_y):
-            temP[i] = temP[padSize_y]
+            temP[:,i] = temP[:,padSize_y]
             idx = i+1
-            temP[-1] = temP[-(padSize_y+1)]
+            temP[:,-1] = temP[:,-(padSize_y+1)]
     elif padDir == 'b':
         temP[padSize_x:iM_x + padSize_x, padSize_y:iM_y + padSize_y] = iM
         for i in range(padSize_x):

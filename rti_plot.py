@@ -61,9 +61,9 @@ def plotRTIIm(scheme, iM, **kw):
                     c=s_color,
                     marker=s_marker)
     plt.grid()
-    if path:        
-        fn = path + '.svg'
-        plt.savefig(fn)
+    # if path:        
+        # fn = 'test.svg'
+        # plt.savefig(fn)
     plt.show()
 
 def plotDerivative(scheme, de, **kw):
