@@ -48,8 +48,8 @@ class RTISimulation():
             title_cal = setting['WeightAlgorithm']
         else:
             setting = self.estimator.weightCalculator.getSetting()
-            title_w = f'w@{setting["Width"]}' + delimiter
-            title_l = f'l@{setting["Length"]}' + delimiter
+            title_w = f'W@{setting["Width"]}' + delimiter
+            title_l = f'L@{setting["Length"]}' + delimiter
             title_vx = f'VX@{setting["Voxel Width"]}' + delimiter
             title_SC = f'SC@{setting["Sensor Count"]}' + '-'
             title_SR = f'SR@{setting["Length"]/(setting["Sensor Count"]/2)}' + delimiter
@@ -186,7 +186,7 @@ class RTISimulation():
             os.mkdir(fn_fig)
         except:
             print('Folder ' + fn_fig + ' is already exist')
-        fn_fig += '/' + self.getTitle()
+        fn_fig += '/' + self.getTitle('',True)
 
         fn_rec = fdn + '/rec'
         try:
@@ -234,12 +234,13 @@ class RTISimulation():
                         plotDerivative(self.scheme,
                                        de,
                                        path = fn_f,
-                                       title = title,
-                                       label = 'Derivative by X',
-                                       caption = 'obj. derivative@' 
-                                       + str(de['obj-derivative']) + ', '
-                                       + 'non. derivative@' 
-                                       + str(de['non-derivative']))
+                                       title = self.getTitle(),
+                                       label = 'Derivative of Attenuation',
+                                       caption = 'obj@' 
+                                       + '{:.3f}'.format(de['obj-derivative'])
+                                       + ', '
+                                       + 'non@' 
+                                       + '{:.3f}'.format(de['non-derivative']))
                     if s_rec:
                         fn_r = fn_rec + '/' + key
                         try:

@@ -50,7 +50,7 @@ def plotRTIIm(scheme, iM, **kw):
     ax.set_title(title, pad=10)
     ax.set_ylabel('[m]')
     xlabel = '[m]'
-    if 'rmse' in kw: xlabel += '\nRMSE =' + str(kw['rmse'])
+    if 'rmse' in kw: xlabel += '\nRMSE = ' + '{:.3f}'.format(kw['rmse'])
     ax.set_xlabel(xlabel)
     cb = plt.colorbar(hm)
     if label: cb.set_label(label)
@@ -61,9 +61,9 @@ def plotRTIIm(scheme, iM, **kw):
                     c=s_color,
                     marker=s_marker)
     plt.grid()
-    # if path:        
-        # fn = 'test.svg'
-        # plt.savefig(fn)
+    if path:        
+        fn = path + '.svg'
+        plt.savefig(fn)
     plt.show()
 
 def plotDerivative(scheme, de, **kw):
@@ -79,7 +79,7 @@ def plotDerivative(scheme, de, **kw):
     sensorPosition = scheme.getSensorPosition()
     if 'sensorPosition' in kw:
         sensorPosition = kw['sensorPosition']
-    color='coolwarm'
+    color='Blues'
     if 'color' in kw:
         color = kw['color']
     s_sensor = True
@@ -97,7 +97,8 @@ def plotDerivative(scheme, de, **kw):
     coordX = np.asarray(sel.coordX)
     coordY = np.asarray(sel.coordY)
     
-    X, Y = np.meshgrid(coordX, coordY)
+    X, Y = np.meshgrid(coordX[0:-1] + scheme.vx_width/2, 
+                       coordY[0:-1] + scheme.vx_length/2)
 
     fig, ax = plt.subplots(1, 1)
     hm = ax.imshow(de['abs'].T,
@@ -106,13 +107,23 @@ def plotDerivative(scheme, de, **kw):
                    origin='lower',
                    interpolation='nearest',
                    vmin=0)
-    ax.quiver(X, Y, de['x'], de['y'])
+    # norm = np.log10(de['abs'])
+    U = (de['x']).T  #/de['abs']
+    V = (de['y']).T  #/de['abs']
+    ax.quiver(X, Y, U, V,
+              scale = 1.5,
+              scale_units = 'xy',
+              width = 0.010,
+              headwidth = 3,
+              headlength = 3,
+              headaxislength = 2.5)
     
     ax.set_title(title, pad=10)
     ax.set_ylabel('[m]')
     xlabel = '[m]'
-    if 'caption' in kw: xlabel += '\n' + str(kw['caption'])
+    if 'caption' in kw: xlabel += '\n' + kw['caption']
     ax.set_xlabel(xlabel)
+    
     cb = plt.colorbar(hm)
     if label: cb.set_label(label)
     if s_sensor and len(sensorPosition) > 0:
@@ -126,7 +137,6 @@ def plotDerivative(scheme, de, **kw):
         fn = path + '_derivative.svg'
         plt.savefig(fn)
     plt.show()
-
 
 def plotSurface(scheme, Z, **kw):
     path = ''

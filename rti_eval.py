@@ -58,15 +58,15 @@ def derivativeEval(reF, reS, **kw):
         question = kw['question'] 
 
     if not question:
-        results['x'] = calDerivative(reS, axis='x')
-        results['y'] = calDerivative(reS, axis='y')
+        results['x'] = calDerivative(reS, axis='x', direction = 'f')
+        results['y'] = calDerivative(reS, axis='y', direction = 'f')
         results['abs'] = np.sqrt(results['x']**2 + results['y']**2)
         results['obj-derivative'] = results['abs'][idx_obJ].mean()
         results['non-derivative'] = results['abs'][idx_noN].mean()        
     elif question == 'x':
-        results['x'] = calDerivative(reS, axis='x')
+        results['x'] = calDerivative(reS, axis='x', direction = 'f')
     elif question == 'y':
-        results['y'] = calDerivative(reS, axis='y')
+        results['y'] = calDerivative(reS, axis='y', direction = 'f')
     else:
         raise ValueError('question is not defined')
     
