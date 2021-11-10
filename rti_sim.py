@@ -39,8 +39,8 @@ class RTISimulation():
     def getTitle(self, delimiter=',', short = False):
         if short:
             setting = self.estimator.weightCalculator.getSetting()
-            title_w = f'w{setting["Width"]}' + delimiter
-            title_l = f'l{setting["Length"]}' + delimiter
+            title_w = f'W{setting["Width"]}' + delimiter
+            title_l = f'L{setting["Length"]}' + delimiter
             title_vx = f'VX{setting["Voxel Width"]}' + delimiter
             title_SC = f'SC{setting["Sensor Count"]}' 
             title_SR = delimiter
@@ -93,13 +93,13 @@ class RTISimulation():
                                              n_sensor)    # n_sensor
         elif schemeType == 'RE':
             self.scheme = RectangularScheme(ref_pos,
-                                            w_area,      # area_width
-                                            l_area,      # area_length
-                                            vx_dim,      # vx_width
-                                            vx_dim,      # vx_length
-                                            w_area,      # wa_width
-                                            l_area,      # wa_length
-                                            n_sensor)    # n_sensor
+                                            w_area,       # area_width
+                                            l_area,       # area_length
+                                            vx_dim,       # vx_width
+                                            vx_dim,       # vx_length
+                                            w_area,       # wa_width
+                                            l_area,       # wa_length
+                                            n_sensor)     # n_sensor
         else:
             ValueError('Scheme Type not exist')
 
@@ -146,15 +146,14 @@ class RTISimulation():
 
     def process_showPositionFactor(self):
         """
-        This process investigates all possible position of an rectangular object
-        in the detection area.
+        This process investigates all possible position of an rectangular 
+        object in the detection area.
 
         Returns
         -------
         None.
 
         """
-
         s_graphic = True
         s_rec = True
         s_surface = False
@@ -281,6 +280,7 @@ class RTISimulation():
                         + '\nAVG. OBJ. Attenuation ,' + str(r['obj_mean'])
                         + '\nAVG. NON. Attenuation ,' + str(r['non_mean'])
                         + '\nAVG.')
+                            
         x_exp_coorD = [x + obj_dim_x/2 for x in x_exp_coorD]
         y_exp_coorD = [y + obj_dim_y/2 for y in y_exp_coorD]
 
