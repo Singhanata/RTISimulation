@@ -148,3 +148,6 @@ def _calIdealLinkAtten(wc, voxelAttenM):
         return linkAttenArr
     except ValueError:
         raise ValueError('Dimension mismatch.')
+        
+def mixLognormalfading(p, sigma1, sigma2):
+    pass

@@ -166,7 +166,7 @@ class RTISimulation():
                                    vx_dim=0.5,
                                    n_sensor=20,
                                    schemeType='SW',
-                                   weightalgorithm='EX')
+                                   weightalgorithm='IN')
 
         end_nx = ceil(obj_dim_x / self.scheme.vx_width)
         end_ny = ceil(obj_dim_y / self.scheme.vx_length)
