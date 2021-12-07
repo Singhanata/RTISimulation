@@ -6,7 +6,7 @@ Created on Thu Apr  1 09:11:05 2021
 """
 from rti_grid import RTIGrid
 
-def simulateInput(scheme, calculator, obj_pos, obj_dim=(1.,1.), snr=0):
+def simulateInput(scheme, calculator, obj_pos, obj_dim=(1.,1.), **kw):
     """
     Calculate the reference input based on the simulation conditions and object
     information in 2D
@@ -24,9 +24,6 @@ def simulateInput(scheme, calculator, obj_pos, obj_dim=(1.,1.), snr=0):
     obj_dim : Integer List
         (x-dimension length, y-dimension length)
         The default is (1.,1.).
-    snr : Numerical Value
-        Signal-to-Noise ratio (Amplitude/sigma_noise)
-        The default is 0. (No additive noise)
 
     Returns
     -------
@@ -41,7 +38,8 @@ def simulateInput(scheme, calculator, obj_pos, obj_dim=(1.,1.), snr=0):
     
     vxS = scheme.getVoxelScenario(x_range, y_range)
     l_Atten = _calIdealLinkAtten(calculator, vxS)
-
+    if 'snr' in kw:
+        l_Atten = _calCorruptedLinkAtten(l_Atten)
     refInput = {}
     k = 'o(' + str(obj_pos[0]) + ',' + str(obj_pos[1]) + ')'
     refInput[k] = [l_Atten, vxS]
@@ -149,5 +147,42 @@ def _calIdealLinkAtten(wc, voxelAttenM):
     except ValueError:
         raise ValueError('Dimension mismatch.')
         
-def mixLognormalfading(p, sigma1, sigma2):
+def _calCorruptedLinkAtten(l, snr, **kw):
+    """
+    Calculate noise signal according to the SNR and noise model
+
+    Parameters
+    ----------
+    l : TYPE
+        DESCRIPTION.
+    SNR : float
+        Ratio of signal mean and noise sigma    
+
+    Returns
+    -------
+    Link Attenuation with additive noise
+
+    """
     pass
+            
+def mixLognormalfading(p, sigma1):
+    """
+    This function models Fading in RTI using two-part gaussian mixture model.
+    The fading effects in RTI can be modelled by two-part mixture of log-normal
+    distribution, i.e., The logarithm of the random variable is a random 
+    variable with the gaussian distribution. 
+
+    Parameters
+    ----------
+    p : float
+        Probability of the dominant normal distribution
+    sigma1 : float
+        Standard deviation of dominant normal distribution
+
+    Returns
+    -------
+    None.
+
+    """
+    # calculate p2 and sigma2 
+    # get a sample of uniform [0,1) 
