@@ -4,6 +4,7 @@ Created on Thu Apr  1 09:11:05 2021
 
 @author: krong
 """
+import numpy as np
 from rti_grid import RTIGrid
 
 def simulateInput(scheme, calculator, obj_pos, obj_dim=(1.,1.), **kw):
@@ -25,6 +26,9 @@ def simulateInput(scheme, calculator, obj_pos, obj_dim=(1.,1.), **kw):
         (x-dimension length, y-dimension length)
         The default is (1.,1.).
 
+    Keyword Arguments:
+        snr (float) : Ratio between signal (mean) and noise (sigma)
+        snr-db (float) : snr in [dB]
     Returns
     -------
     refInput : dictionary
@@ -38,8 +42,10 @@ def simulateInput(scheme, calculator, obj_pos, obj_dim=(1.,1.), **kw):
     
     vxS = scheme.getVoxelScenario(x_range, y_range)
     l_Atten = _calIdealLinkAtten(calculator, vxS)
+    if 'snr-db' in kw:
+        kw['snr'] = 10**(kw['snr-db']/10)
     if 'snr' in kw:
-        l_Atten = _calCorruptedLinkAtten(l_Atten)
+        l_Atten = _calCorruptedLinkAtten(l_Atten, kw['snr'])
     refInput = {}
     k = 'o(' + str(obj_pos[0]) + ',' + str(obj_pos[1]) + ')'
     refInput[k] = [l_Atten, vxS]
@@ -153,18 +159,38 @@ def _calCorruptedLinkAtten(l, snr, **kw):
 
     Parameters
     ----------
-    l : TYPE
-        DESCRIPTION.
-    SNR : float
-        Ratio of signal mean and noise sigma    
-
+    l : Link Attenuation [dB]
+        Array of Link Attenuation 
+    SNR : float (% not in [dB])
+        Ratio of signal mean and noise sigma [%]
+    
+    Keyword Args:
+        mode (integer) : How to calculate the SNR
+            0 : calculate based on E[l]
+            other : calculate on each element of l
     Returns
     -------
     Link Attenuation with additive noise
 
     """
-    pass
-            
+    if not 'mode' in kw or not kw['mode']:
+        # sigma is calculated from E[l]
+        mu = sum(l)/len(l)
+        sigma = mu/snr
+        noise = np.random.normal(0, sigma, l.size)
+        ln = l + noise
+        
+        return ln
+    else:
+        ln = np.zeros(l.size)
+        # sigma is calculated for each l element
+        for i,val in enumerate(l):
+            sigma = val/snr
+            noise = np.random.normal() * sigma
+            ln[i] = val + noise
+        
+        return ln
+                    
 def mixLognormalfading(p, sigma1):
     """
     This function models Fading in RTI using two-part gaussian mixture model.
