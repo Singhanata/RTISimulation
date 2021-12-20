@@ -167,7 +167,8 @@ def _calCorruptedLinkAtten(l, snr, **kw):
     Keyword Args:
         mode (integer) : How to calculate the SNR
             0 : calculate based on E[l]
-            other : calculate on each element of l
+            1 : calculate on each element of l
+            other : two-part gaussian mixture model
     Returns
     -------
     Link Attenuation with additive noise
@@ -181,7 +182,7 @@ def _calCorruptedLinkAtten(l, snr, **kw):
         ln = l + noise
         
         return ln
-    else:
+    elif kw['mode'] == 1:
         ln = np.zeros(l.size)
         # sigma is calculated for each l element
         for i,val in enumerate(l):
@@ -190,6 +191,9 @@ def _calCorruptedLinkAtten(l, snr, **kw):
             ln[i] = val + noise
         
         return ln
+    else:
+        # call mixlognarmalfading 
+        raise ValueError('Mode not implemented')
                     
 def mixLognormalfading(p, sigma1):
     """
@@ -212,3 +216,4 @@ def mixLognormalfading(p, sigma1):
     """
     # calculate p2 and sigma2 
     # get a sample of uniform [0,1) 
+    pass
