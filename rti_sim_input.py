@@ -7,7 +7,7 @@ Created on Thu Apr  1 09:11:05 2021
 import numpy as np
 from rti_grid import RTIGrid
 
-def simulateInput(scheme, calculator, obj_pos, obj_dim=(1.,1.), **kw):
+def simulateInput(scheme, cal, obj_dim=(1.,1.), **kw):
     """
     Calculate the reference input based on the simulation conditions and object
     information in 2D
@@ -36,115 +36,128 @@ def simulateInput(scheme, calculator, obj_pos, obj_dim=(1.,1.), **kw):
 
     """
     
-    
-    x_range = (obj_pos[0], obj_pos[0] + obj_dim[0])
-    y_range = (obj_pos[1], obj_pos[1] + obj_dim[1])
-    
-    vxS = scheme.getVoxelScenario(x_range, y_range)
-    l_Atten = _calIdealLinkAtten(calculator, vxS)
-    if 'snr-db' in kw:
-        kw['snr'] = 10**(kw['snr-db']/10)
-    if 'snr' in kw:
-        l_Atten = _calCorruptedLinkAtten(l_Atten, kw['snr'])
-    refInput = {}
-    k = 'o(' + str(obj_pos[0]) + ',' + str(obj_pos[1]) + ')'
-    refInput[k] = [l_Atten, vxS]
-    
-    return refInput
-    
-
-def simulateFormInput(sim, formSet, objXLength = 0, objYLength = 0):
-    """
-    Parameters
-    ----------
-    sim : RTISimulation
-    form_set : String
-        'reference' generate input at 9 reference position
-        | lt | ct | rt |
-        | lc | cc | rc |
-        | lb | cb | rb |
-        'center' stand at the center of the area
-        ...
-        'Pass Center' Moving through the center
-    objWidth : Numerical
-        DESCRIPTION.
-    objLength : Numerical
-        DESCRIPTION.
-    snr : Numerical Value
-        Signal-to-Noise ratio 
-        The default is 0. (No additive noise)
-
-    Returns
-    -------
-    None.
-
-    """
-    scheme = sim.scheme
-    wc = sim.calculator
-
     coordX = scheme.selection.coordX
     coordY = scheme.selection.coordY
 
     dx = coordX[-1] - coordX[0]
     dy = coordY[-1] - coordY[0]
-
-    if formSet == 'center':
-
+    
+    refInput = {}
+    
+    if  'obj_pos' in kw:
+        obj_pos = kw['obj_pos']
+        x_range = (obj_pos[0], obj_pos[0] + obj_dim[0])
+        y_range = (obj_pos[1], obj_pos[1] + obj_dim[1])
+        
+        vxS = scheme.getVoxelScenario(x_range, y_range)
+        l_Atten = _calIdealLinkAtten(cal, vxS)
+        if 'snr-db' in kw:
+            kw['snr'] = 10**(kw['snr-db']/10)
+        if 'snr' in kw:
+            l_Atten = _calCorruptedLinkAtten(l_Atten, kw['snr'])
+        refInput = {}
+        k = 'o(' + str(obj_pos[0]) + ',' + str(obj_pos[1]) + ')'
+        refInput[k] = [l_Atten, vxS]
+        
+        return refInput
+    
+    elif kw['form'] == 'center':
         center_x = coordX[0] + dx/2
         center_y = coordY[0] + dy/2
 
-        x_range = (center_x - objXLength/2, center_x + objXLength/2)
-        y_range = (center_y - objYLength/2, center_y + objYLength/2)
+        x_range = (center_x - obj_dim[0]/2, center_x + obj_dim[0]/2)
+        y_range = (center_y - obj_dim[1]/2, center_y + obj_dim[1]/2)
 
         vxS = scheme.getVoxelScenario(x_range, y_range)
-        l_Atten = _calIdealLinkAtten(sim.calculator, vxS)
-
-        refInput = {}
-        refInput['center'] = [l_Atten, vxS]
-
+        l_Atten = _calIdealLinkAtten(cal, vxS)
+        kw['key'] = 'center'
+        refInput = _calSNRLinkAtten(l_Atten, vxS, **kw)
+            
         return refInput
     
-    x_range_l = (coordX[0], coordX[0] + dx/10)
-    x_range_c = (coordX[0] + 4.5*dx/10, coordX[0] + 5.5*dx/10)
-    x_range_r = (coordX[0] + 9*dx/10, coordX[0] + 10*dx/10)
+    elif kw['form'] == '9-point':
+        x_range_l = (coordX[0], coordX[0] + dx/10)
+        x_range_c = (coordX[0] + 4.5*dx/10, coordX[0] + 5.5*dx/10)
+        x_range_r = (coordX[0] + 9*dx/10, coordX[0] + 10*dx/10)
+    
+        y_range_b = (coordY[0], coordY[0] + dy/10)
+        y_range_c = (coordY[0] + 4.5*dy/10, coordY[0] + 5.5*dy/10)
+        y_range_t = (coordY[0] + 9*dy/10, coordY[0] + 10*dy/10)
+    
+        vxS_lb = scheme.getVoxelScenario(x_range_l, y_range_b)
+        vxS_cb = scheme.getVoxelScenario(x_range_c, y_range_b)
+        vxS_rb = scheme.getVoxelScenario(x_range_r, y_range_b)
+        vxS_lc = scheme.getVoxelScenario(x_range_l, y_range_c)
+        vxS_cc = scheme.getVoxelScenario(x_range_c, y_range_c)
+        vxS_rc = scheme.getVoxelScenario(x_range_r, y_range_c)
+        vxS_lt = scheme.getVoxelScenario(x_range_l, y_range_t)
+        vxS_ct = scheme.getVoxelScenario(x_range_c, y_range_t)
+        vxS_rt = scheme.getVoxelScenario(x_range_r, y_range_t)
+    
+        l_lb = _calIdealLinkAtten(cal, vxS_lb)
+        l_cb = _calIdealLinkAtten(cal, vxS_cb)
+        l_rb = _calIdealLinkAtten(cal, vxS_rb)
+        l_lc = _calIdealLinkAtten(cal, vxS_lc)
+        l_cc = _calIdealLinkAtten(cal, vxS_cc)
+        l_rc = _calIdealLinkAtten(cal, vxS_rc)
+        l_lt = _calIdealLinkAtten(cal, vxS_lt)
+        l_ct = _calIdealLinkAtten(cal, vxS_ct)
+        l_rt = _calIdealLinkAtten(cal, vxS_rt)
+        if 'snr-db' in kw:
+            kw['snr'] = 10**(kw['snr-db']/10)
+        if 'snr' in kw:
+            l_lb = _calCorruptedLinkAtten(l_lb, kw['snr'])
+            l_cb = _calCorruptedLinkAtten(l_cb, kw['snr'])
+            l_rb = _calCorruptedLinkAtten(l_rb, kw['snr'])
+            l_lc = _calCorruptedLinkAtten(l_lc, kw['snr'])
+            l_cc = _calCorruptedLinkAtten(l_cc, kw['snr'])
+            l_rc = _calCorruptedLinkAtten(l_rc, kw['snr'])
+            l_lt = _calCorruptedLinkAtten(l_lt, kw['snr'])
+            l_ct = _calCorruptedLinkAtten(l_ct, kw['snr'])
+            l_rt = _calCorruptedLinkAtten(l_rt, kw['snr'])
+    
+        refInput = {}
+        refInput['lb'] = [l_lb, vxS_lb]
+        refInput['cb'] = [l_cb, vxS_cb]
+        refInput['rb'] = [l_rb, vxS_rb]
+        refInput['lc'] = [l_lc, vxS_lc]
+        refInput['cc'] = [l_cc, vxS_cc]
+        refInput['rc'] = [l_rc, vxS_rc]
+        refInput['lt'] = [l_lt, vxS_lt]
+        refInput['ct'] = [l_ct, vxS_ct]
+        refInput['rt'] = [l_rt, vxS_rt]
+    
+        return refInput
 
-    y_range_b = (coordY[0], coordY[0] + dy/10)
-    y_range_c = (coordY[0] + 4.5*dy/10, coordY[0] + 5.5*dy/10)
-    y_range_t = (coordY[0] + 9*dy/10, coordY[0] + 10*dy/10)
-
-    vxS_lb = scheme.getVoxelScenario(x_range_l, y_range_b)
-    vxS_cb = scheme.getVoxelScenario(x_range_c, y_range_b)
-    vxS_rb = scheme.getVoxelScenario(x_range_r, y_range_b)
-    vxS_lc = scheme.getVoxelScenario(x_range_l, y_range_c)
-    vxS_cc = scheme.getVoxelScenario(x_range_c, y_range_c)
-    vxS_rc = scheme.getVoxelScenario(x_range_r, y_range_c)
-    vxS_lt = scheme.getVoxelScenario(x_range_l, y_range_t)
-    vxS_ct = scheme.getVoxelScenario(x_range_c, y_range_t)
-    vxS_rt = scheme.getVoxelScenario(x_range_r, y_range_t)
-
-    l_lb = _calIdealLinkAtten(wc, vxS_lb)
-    l_cb = _calIdealLinkAtten(wc, vxS_cb)
-    l_rb = _calIdealLinkAtten(wc, vxS_rb)
-    l_lc = _calIdealLinkAtten(wc, vxS_lc)
-    l_cc = _calIdealLinkAtten(wc, vxS_cc)
-    l_rc = _calIdealLinkAtten(wc, vxS_rc)
-    l_lt = _calIdealLinkAtten(wc, vxS_lt)
-    l_ct = _calIdealLinkAtten(wc, vxS_ct)
-    l_rt = _calIdealLinkAtten(wc, vxS_rt)
-
+def _calSNRLinkAtten(l_ideal, vxS, **kw):
     refInput = {}
-    refInput['lb'] = [l_lb, vxS_lb]
-    refInput['cb'] = [l_cb, vxS_cb]
-    refInput['rb'] = [l_rb, vxS_rb]
-    refInput['lc'] = [l_lc, vxS_lc]
-    refInput['cc'] = [l_cc, vxS_cc]
-    refInput['rc'] = [l_rc, vxS_rc]
-    refInput['lt'] = [l_lt, vxS_lt]
-    refInput['ct'] = [l_ct, vxS_ct]
-    refInput['rt'] = [l_rt, vxS_rt]
-
-    return refInput
-
+    if 'snr_db' in kw:
+        kw['snr'] = 10**(kw['snr-db']/10)
+    if 'snr' in kw:
+        l_snr = _calCorruptedLinkAtten(l_ideal, kw['snr'])
+        key = kw['key'] + '_snr' + str(kw['snr'])
+        refInput[key] = [l_snr, vxS]
+        if 'sample_size' in kw:
+            for i in range(kw['sample_size']):
+                l_snr = _calCorruptedLinkAtten(l_ideal, kw['snr'])
+                key = (kw['key'] + '_snr' 
+                                 + '_' 
+                                 + str(kw['snr']) + '_' + str(i+1))
+                refInput[key] = [l_snr, vxS]
+            return refInput
+    if 'snr_db_list' in kw:
+            for v in kw['snr_db_list']:
+                kw['snr_list'].append(10**(kw['snr-db']/10))
+    if 'snr_list' in kw:
+        for v in kw['snr_list']:
+                l_snr = _calCorruptedLinkAtten(l_ideal, v)
+                key = kw['key'] + '_snr' + '_' + str(v)
+                refInput[key] = [l_snr, vxS]
+        return refInput
+   
+    refInput[kw['key']] = [l_ideal, vxS]        
+    return refInput    
+       
 def _calIdealLinkAtten(wc, voxelAttenM):
     try:
         vxArr = RTIGrid.reshapeVoxelM2Arr(voxelAttenM)

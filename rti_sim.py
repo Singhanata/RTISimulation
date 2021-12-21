@@ -126,6 +126,9 @@ class RTISimulation():
         else:
             self.estimator = RTIEstimator(self.calculator)
 
+        res_folder = ''
+        if 'add_title' in kw:
+            res_folder += kw['add_title'] + '-'
         res_folder = self.res_dir + '/' + self.getTitle('', True)
         try:
             os.mkdir(res_folder)

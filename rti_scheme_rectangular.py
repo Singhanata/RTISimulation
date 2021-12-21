@@ -266,6 +266,6 @@ class RectangularScheme(RTIScheme):
 
         return [xs,ys]
 
-    def show(self):
-        super().show('rect-scheme.svg');
+    def show(self, **kw):
+        super().show('rect-scheme.svg', **kw);
 

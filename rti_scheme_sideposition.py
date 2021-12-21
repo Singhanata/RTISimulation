@@ -125,5 +125,5 @@ class SidePositionScheme(RTIScheme):
         s += '-Sideway_Poistioning'
         return s
 
-    def show(self):
-        super().show('side-scheme.svg');
+    def show(self, **kw):
+        super().show('side-scheme.svg', **kw);

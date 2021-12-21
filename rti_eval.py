@@ -51,6 +51,7 @@ def derivativeEval(reF, reS, **kw):
     results = {}
 
     idx_obJ = (reF==1)
+    idx_bordeR = _getBorderIdx(idx_obJ)
     idx_noN = (reF==0)
 
     question = ''
@@ -62,7 +63,9 @@ def derivativeEval(reF, reS, **kw):
         results['y'] = calDerivative(reS, axis='y', direction = 'f')
         results['abs'] = np.sqrt(results['x']**2 + results['y']**2)
         results['obj-derivative'] = results['abs'][idx_obJ].mean()
-        results['non-derivative'] = results['abs'][idx_noN].mean()        
+        results['non-derivative'] = results['abs'][idx_noN].mean()
+        results['border'] = results['abs'][idx_bordeR].mean()
+        results['border_ratio'] = results['border']/results['abs'].mean()        
     elif question == 'x':
         results['x'] = calDerivative(reS, axis='x', direction = 'f')
     elif question == 'y':
@@ -186,8 +189,17 @@ def convolve2D(iM, kernel, **kw):
             
     return output
 
-
-
-
+def _getBorderIdx(idx_obJ):
+    
+    bU = np.roll(idx_obJ, -1, axis=0)
+    bU = (bU!=idx_obJ)
+    bD = np.roll(idx_obJ, 1, axis=0)
+    bD = (bD!=idx_obJ)
+    bL = np.roll(idx_obJ, -1, axis=1)
+    bL = (bU!=idx_obJ)
+    bR = np.roll(idx_obJ, 1, axis=1)
+    bR = (bU!=idx_obJ)
+    
+    return (bU|bD|bL|bR)
 
 

@@ -215,7 +215,20 @@ class RTIScheme():
     def getSensorPosition(self):
         raise NotImplementedError
 
-    def show(self, fn = 'scheme.svg'):
+    def show(self, fn = 'scheme.svg', **kw):
+        sc = 'black'
+        if 's_color' in kw:
+            sc = kw['s_color']
+        ss = 800
+        if 's_size' in kw:
+            ss = kw['s_size']
+        sm = '.'
+        if 's_marker' in kw:
+            sm = kw['s_marker']
+        lc = 'b'
+        if 'l_color' in kw:
+            lc = kw['l_color']
+
         fn = 'results/' + fn
         spos = self.getSensorPosition()
         linkS = self.linkS
@@ -232,12 +245,14 @@ class RTIScheme():
 
         plt.scatter(spos[0],
                 spos[1],
-                s=200,
-                c = 'black')
+                s=ss,
+                c=sc,
+                marker=sm)
         for l in linkS:
             (plt.plot([l.tx.pos.x, l.rx.pos.x],
                       [l.tx.pos.y, l.rx.pos.y],
-                      'b--',
+                      '--',
+                      color = lc,
                       linewidth = 1))
         ax.set_xticks(major_ticks)
         ax.set_xticks(minor_ticks, minor=True)

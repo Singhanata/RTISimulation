@@ -51,6 +51,7 @@ def plotRTIIm(scheme, iM, **kw):
     ax.set_ylabel('[m]')
     xlabel = '[m]'
     if 'rmse' in kw: xlabel += '\nRMSE = ' + '{:.3f}'.format(kw['rmse'])
+    if 'mse' in kw: xlabel += '\nMSE = ' + '{:.3f}'.format(kw['mse'])
     ax.set_xlabel(xlabel)
     cb = plt.colorbar(hm)
     if label: cb.set_label(label)
