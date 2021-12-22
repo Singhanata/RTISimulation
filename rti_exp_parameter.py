@@ -10,12 +10,10 @@ import os
 
 from rti_eval import RMSEEvaluation as calRMSE
 from rti_eval import derivativeEval as calDerivative
-from rti_grid import RTIGrid
+from rti_rec import result_record
 
 from rti_sim_input import simulateInput
 from rti_plot import plotRTIIm, plotDerivative
-
-import matplotlib.pyplot as plt
 
 def process_alpha(sim):
     
@@ -24,11 +22,17 @@ def process_alpha(sim):
     
     obj_dim_x = 1
     obj_dim_y = 1
-
+    snr = [1, 10, 100, 1000]
+    sample_size = 100
     alp = [0.01, 0.1, 1., 10., 100]
-    c_rmse = np.zeros(len(alp))
+    rmse = np.zeros((len(alp), len(snr), sample_size))
+    der_border = np.zeros((len(alp), len(snr), sample_size))
+    der_borderratio = np.zeros((len(alp), len(snr), sample_size))
+    der_nonborder = np.zeros((len(alp), len(snr), sample_size))
+    der_nonborderratio = np.zeros((len(alp), len(snr), sample_size))
     for idx, al in enumerate(alp):
-        fdn = sim.process_routine(l_area=10,
+        # check each alpha 
+        savepath = sim.process_routine(l_area=10,
                                    w_area=10,
                                    vx_dim=0.5,
                                    n_sensor=20,
@@ -36,91 +40,57 @@ def process_alpha(sim):
                                    weightalgorithm='LS',
                                    alpha=al,
                                    add_title='alpha')
-        coordX = np.asarray(sim.scheme.selection.coordX)
-        coordY = np.asarray(sim.scheme.selection.coordY) 
-        fn_fig = fdn + '/fig'
-        try:
-            os.mkdir(fn_fig)
-        except:
-            print('Folder ' + fn_fig + ' is already exist')
-        fn_fig += '/' + sim.getTitle('', True)
-        fn_rec = fdn + '/rec'
-        try:
-            os.mkdir(fn_rec)
-        except:
-            print('Folder ' + fn_rec + ' is already exist')
-        fn_con = fdn + '/conc'
-        try:
-            os.mkdir(fn_con)
-        except:
-            print('Folder ' + fn_con + ' is already exist')
-    
-        pre_fn = sim.getTitle('', True)
-        refInput = simulateInput(sim.scheme,
-                         sim.calculator,
-                         (obj_dim_x, obj_dim_y),
-                         form = 'center',
-                         snr = 10,
-                         sample_size = 100)
-        for key, value in refInput.items():
-            imA = (sim.estimator.calVoxelAtten(value[0]))
-            iM = (RTIGrid.reshapeVoxelArr2Im(imA, sim.scheme.getShape()))
-            r = calRMSE(value[1], iM)
-            de = calDerivative(value[1], 
-                               iM, 
-                               obj_pos = (4.5, 4.5),
-                               obj_dim = (1., 1.))
-            c_rmse[idx] = r['rmse_all']
-            if s_graphic:
-                fn_f = fn_fig + '-' + key
-                plotRTIIm(sim.scheme,
-                          iM, 
-                          path = fn_f,
-                          title = sim.getTitle(), 
-                          label = 'Rel. Attenuation',  
-                          rmse = r['rmse_all'])
-                plotDerivative(sim.scheme,
-                               de,
-                               path = fn_f,
-                               title = sim.getTitle(),
-                               label = 'Derivative of Attenuation',
-                               caption = 'obj@' 
-                               + '{:.3f}'.format(de['obj-derivative'])
-                               + ', '
-                               + 'non@' 
-                               + '{:.3f}'.format(de['non-derivative']))
-            if s_rec:
-                fn_r = fn_rec + '/' + key
-                try:
-                    os.mkdir(fn_r)
-                except:
-                    print('Folder ' + fn_r + ' is already exist')
+        record = {}
+        record['x'] = np.asarray(sim.scheme.selection.coordX)
+        record['y'] = np.asarray(sim.scheme.selection.coordY) 
+        for idx_snr, sn in enumerate(snr):
+            # check each snr
+            refInput = simulateInput(sim.scheme,
+                             sim.calculator,
+                             (obj_dim_x, obj_dim_y),
+                             form = 'cc',
+                             snr = sn,
+                             sample_size = sample_size,
+                             mode = 2)
+            for key, value in refInput.items():
+                iM = (sim.estimator.calVoxelAtten(value[0]))
+                r = calRMSE(value[1], iM)
+                de = calDerivative(value[1], 
+                                   iM, 
+                                   obj_pos = (4.5, 4.5),
+                                   obj_dim = (1., 1.))
+                record['ref'] = value[1]
+                record['image'] = iM
+                record['rmse'] = r
+                record['derivative'] = de
+                if s_graphic:
+                    gfx_name = sim.getTitle('', True) + '_' + key
+                    fn_f = os.sep.join([savepath['gfx'], gfx_name])
+                    plotRTIIm(sim.scheme,
+                              iM, 
+                              path = fn_f,
+                              title = sim.getTitle(), 
+                              label = 'Rel. Attenuation',  
+                              rmse = r['rmse_all'])
+                    plotDerivative(sim.scheme,
+                                   de,
+                                   path = fn_f,
+                                   title = sim.getTitle(),
+                                   label = 'Derivative of Attenuation',
+                                   caption = 'border@' 
+                                   + '{:.3f}'.format(de['border'])
+                                   + ', '
+                                   + 'non-border@' 
+                                   + '{:.3f}'.format(de['non-border']))
+                if s_rec:
+                    result_record(savepath['rec'], key, record)
+                rmse[idx][idx_snr][value[2]] = r['rmse_all']
+                der_border[idx][idx_snr][value[2]] = de['border']
+                der_borderratio[idx][idx_snr][value[2]] = de['border_ratio']
+                der_nonborder[idx][idx_snr][value[2]] = de['non-border']
+                der_nonborderratio[idx][idx_snr][value[2]] = de['non-border_ratio']
 
-                fn_rx = fn_r + '/x.csv'
-                fn_ry = fn_r + '/y.csv'
-                fn_ref = fn_r + '/ref.csv'
-                fn_res = fn_r + '/res.csv'
-                fn_info = fn_r + '/info.csv'
-                fn_der_x = fn_r + '/derivative_x.csv'
-                fn_der_y = fn_r + '/derivative_y.csv'
-                fn_der_abs = fn_r + '/derivative_abs.csv'
-
-                np.savetxt(fn_rx, coordX, delimiter=',')
-                np.savetxt(fn_ry, coordY, delimiter=',')
-                np.savetxt(fn_ref, value[1], delimiter=',')
-                np.savetxt(fn_res, iM, delimiter=',')
-                np.savetxt(fn_der_x, de['x'],delimiter=',')
-                np.savetxt(fn_der_y, de['y'],delimiter=',')
-                np.savetxt(fn_der_abs, de['abs'],delimiter=',')
-                with open(fn_info, 'w') as f:
-                    f.write(pre_fn + '\nRMSE = ' + str(r['rmse_all'])
-                + '\nAVG. OBJ. RMSE ,' + str(r['rmse_obj'])
-                + '\nAVG. NON. RMSE ,' + str(r['rmse_non'])
-                + '\nAVG. OBJ. Attenuation ,' + str(r['obj_mean'])
-                + '\nAVG. NON. Attenuation ,' + str(r['non_mean'])
-                + '\nAVG.')
-                
-    fig, ax = plt.subplots(1, 1)
-    plt.plot(alp, c_rmse)
-    plt.grid()
-    plt.show()
+        # fig, ax = plt.subplots(1, 1)
+        # plt.plot(alp, c_rmse)
+        # plt.grid()
+        # plt.show()

@@ -6,6 +6,7 @@ Created on Thu Aug  6 15:15:26 2020
 """
 import numpy as np
 import sys
+from rti_grid import RTIGrid
 
 class RTIEstimator():
     def __init__(self, weightCalculator, alpha = 1.):
@@ -56,12 +57,14 @@ class RTIEstimator():
         try:
             bM = np.matmul(self.weightingMT, linkAtten)
             voxelAtten = np.linalg.solve(self.coeffM, bM)
-            return voxelAtten
+            iM = (RTIGrid.reshapeVoxelArr2Im(voxelAtten, self.getShape()))
+            return iM
         except:
             raise ValueError(f'input must be array of link attenuation \
                   (length={self.estimatorM[1]}')
 
-
+    def getShape(self):
+        return self.weightCalculator.getShape()
     def buildDiffM(dim):
         x = dim[0]
         y = dim[1]

@@ -18,7 +18,7 @@ from rti_cal_invarea import InvAreaRTICalculator
 class RTISimulation():
     def __init__(self):
         tStr = datetime.now().strftime('-%d%m%Y-%H%M%S')
-        res_dir = 'results/results' + tStr
+        res_dir = os.sep.join(['results',('results'+tStr)])
         os.getcwd()
         try:
             os.mkdir(res_dir)
@@ -33,7 +33,7 @@ class RTISimulation():
             title_l = f'L{setting["Length"]}' + delimiter
             title_vx = f'VX{setting["Voxel Width"]}' + delimiter
             title_SC = f'SC{setting["Sensor Count"]}' 
-            title_SR = delimiter
+            title_SR = '-'
             title_sch = setting['scheme'] + '-'
             title_cal = setting['WeightAlgorithm']
         else:
@@ -126,16 +126,36 @@ class RTISimulation():
         else:
             self.estimator = RTIEstimator(self.calculator)
 
-        res_folder = ''
+        fdn = self.res_dir
+        title = ''
         if 'add_title' in kw:
-            res_folder += kw['add_title'] + '-'
-        res_folder = self.res_dir + '/' + self.getTitle('', True)
+            title += kw['add_title'] + '-'
+        fdn =  os.sep.join([fdn, (title + self.getTitle('', True))]) 
         try:
-            os.mkdir(res_folder)
+            os.mkdir(fdn)
         except:
-            print('Folder ' + res_folder + ' is already exist')
-
-        return res_folder
+            print('Folder ' + fdn + ' is already exist')
+        fn_fig = os.sep.join([fdn, 'fig']) 
+        try:
+            os.mkdir(fn_fig)
+        except:
+            print('Folder ' + fn_fig + ' is already exist')
+        fn_rec = os.sep.join([fdn, 'rec'])
+        try:
+            os.mkdir(fn_rec)
+        except:
+            print('Folder ' + fn_rec + ' is already exist')
+        fn_con = os.sep.join([fdn, 'conc'])
+        try:
+            os.mkdir(fn_con)
+        except:
+            print('Folder ' + fn_con + ' is already exist')
+        
+        save_path = {}
+        save_path['gfx'] = fn_fig
+        save_path['rec'] = fn_rec
+        save_path['conc'] = fn_con
+        return save_path
 
     
             

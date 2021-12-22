@@ -52,6 +52,7 @@ def derivativeEval(reF, reS, **kw):
 
     idx_obJ = (reF==1)
     idx_bordeR = _getBorderIdx(idx_obJ)
+    idx_nonBordeR = (~idx_bordeR)
     idx_noN = (reF==0)
 
     question = ''
@@ -62,10 +63,13 @@ def derivativeEval(reF, reS, **kw):
         results['x'] = calDerivative(reS, axis='x', direction = 'f')
         results['y'] = calDerivative(reS, axis='y', direction = 'f')
         results['abs'] = np.sqrt(results['x']**2 + results['y']**2)
+        results['mean'] = results['abs'].mean()
         results['obj-derivative'] = results['abs'][idx_obJ].mean()
         results['non-derivative'] = results['abs'][idx_noN].mean()
         results['border'] = results['abs'][idx_bordeR].mean()
-        results['border_ratio'] = results['border']/results['abs'].mean()        
+        results['non-border'] = results['abs'][idx_nonBordeR].mean()
+        results['border_ratio'] = results['border']/results['mean']
+        results['non-border_ratio'] = results['non-border']/results['mean']        
     elif question == 'x':
         results['x'] = calDerivative(reS, axis='x', direction = 'f')
     elif question == 'y':

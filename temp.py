@@ -1,12 +1,17 @@
 
 import numpy as np
+import matplotlib.pyplot as plt
 
-def test(w, l, n):
-    A = np.array([[1,1],[l, -w]])
-    b = np.array([n/2, 0])
-    ns = np.linalg.solve(A,b)
-    return ns
+x = [1 ,10 ,100,1000]
 
-def te(a, **kw):
-    for k,v in kw.items():
-        print(kw['g'])
+y = [1,2,3,4]
+
+fig, ax = plt.subplots(1,1)
+ 
+ax.set_xscale('log')
+
+ax.set_xlabel('LOG')
+
+plt.plot(x,y)
+
+plt.show()
