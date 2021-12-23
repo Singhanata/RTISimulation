@@ -4,8 +4,9 @@ save_data_on_exit = True
 save_history = True
 save_non_project_files = False
 project_type = 'empty-project-type'
-recent_files = ['application.py', 'rti_exp_target.py', 'rti_exp_parameter.py', 'rti_sim_input.py', 'rti_rec.py', 'rti_eval.py', 'rti_estimator.py', 'rti_plot.py', 'temp.py', 'rti_sim.py']
+recent_files = ['application.py', 'rti_exp_parameter.py', 'rti_sim_input.py', 'rti_rec.py', 'rti_eval.py', '..\\..\\..\\..\\..\\..\\..\\programdata\\anaconda3\\lib\\site-packages\\xlsxwriter\\worksheet.py']
 
 [main]
 version = 0.2.0
+recent_files = []
 

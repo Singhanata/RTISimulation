@@ -16,6 +16,23 @@ from rti_sim_input import simulateInput
 from rti_plot import plotRTIIm, plotDerivative
 
 def process_alpha(sim):
+    """
+    Investigation of alpha parameter in RTI Estimator
+    Question:
+        1. Is alpha related to RMSE
+        2. which alpha make the best clarity of the object image
+        3. How system react to gaussian noise as alpha changed
+
+    Parameters
+    ----------
+    sim : Instance of RTISimulation
+        
+
+    Returns
+    -------
+    None.
+
+    """
     
     s_graphic = True
     s_rec = True
@@ -90,7 +107,5 @@ def process_alpha(sim):
                 der_nonborder[idx][idx_snr][value[2]] = de['non-border']
                 der_nonborderratio[idx][idx_snr][value[2]] = de['non-border_ratio']
 
-        # fig, ax = plt.subplots(1, 1)
-        # plt.plot(alp, c_rmse)
-        # plt.grid()
-        # plt.show()
+    # conclude the results
+    
