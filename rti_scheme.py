@@ -15,7 +15,7 @@ from rti_util import Position, Sensor, RTILink
 
 class RTIScheme():
     def __init__(self,
-            ref_pos= Position(0.,0.),
+            ref_pos=(0.,0.),
             area_width=10.,
             area_length=10.,
             vx_width=1.,
@@ -185,7 +185,7 @@ class RTIScheme():
         return setting
     
     def describe(self):
-        s = ('anchor@' + self.ref_pos.toString() + '-' +
+        s = ('anchor@' + Position.toString(self.ref_pos) + '-' +
              'area_dim@' + '(' + str(self.area_width) + ', ' + 
              str(self.area_length) + ')' + '-' +
              'voxel_dim@' + '(' + str(self.vx_width) + ', ' + 
@@ -193,7 +193,7 @@ class RTIScheme():
              'N_sensor@' + str(self.n_sensor))
         return s
     def settingToCSV(self):
-        s = ('anchor, ' + self.ref_pos.toString() + '\n' +
+        s = ('anchor, ' + Position.toString(self.ref_pos) + '\n' +
              'area_dim, ' + '(' + str(self.area_width) + ', ' + 
              str(self.area_length) + ')' + '\n' +
              'voxel_dim, ' + '(' + str(self.vx_width) + ', ' + 
@@ -201,7 +201,7 @@ class RTIScheme():
              'N_sensor, ' + str(self.n_sensor) + '\n')
         return s
     def getTitle(self):
-        s = ('a@' + self.ref_pos.toString() + '-' +
+        s = ('a@' + Position.toString(self.ref_pos) + '-' +
              'dim@' + '(' + str(self.area_width) + ', ' + 
              str(self.area_length) + ')' + '-' +
              'vx@' + '(' + str(self.vx_width) + ', ' + 

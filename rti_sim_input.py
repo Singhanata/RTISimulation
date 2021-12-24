@@ -7,7 +7,36 @@ Created on Thu Apr  1 09:11:05 2021
 import numpy as np
 from rti_grid import RTIGrid
 
-def simulateInput(scheme, cal, obj_dim=(1.,1.), **kw):
+def reference_object_position(coorD, form, obj_dim = (1., 1.)):
+    coordX = coorD[0]
+    coordY = coorD[1]
+    
+    dx = coordX[-1] - coordX[0]
+    dy = coordY[-1] - coordY[0]
+    obj_pos = []
+    
+    for f in form:
+        op = [0.,0.]
+        if f[0] == 'l':
+            op[0] = coordX[0]
+        elif f[0] == 'c':
+            op[0] = coordX[0] + dx/2 - obj_dim[0]/2
+        elif f[0] == 'r':
+            op[0] = coordX[-1] - obj_dim[0]
+        else:
+            raise ValueError('form not defined')
+        if f[1] == 't':
+            op[1] = coordY[-1] - obj_dim[1]
+        elif f[1] == 'c':
+            op[1] = coordY[0] + dy/2 - obj_dim[1]/2
+        elif f[1] == 'b':
+            op[1] = coordY[0]
+        else:
+            raise ValueError('form not defined')
+        obj_pos.append(op)
+        return obj_pos  
+    return 
+def simulateInput(scheme, cal, obj_dim=(1.,1.), obj_pos = (0., 0.), **kw):
     """
     Calculate the reference input based on the simulation conditions and object
     information in 2D
@@ -35,169 +64,16 @@ def simulateInput(scheme, cal, obj_dim=(1.,1.), **kw):
         reference input in form of pixel matrix
 
     """
-    
-    coordX = scheme.selection.coordX
-    coordY = scheme.selection.coordY
-
-    dx = coordX[-1] - coordX[0]
-    dy = coordY[-1] - coordY[0]
-    
-    refInput = {}
-    
-    if  'obj_pos' in kw:
-        obj_pos = kw['obj_pos']
-        
-        x_range = (obj_pos[0], obj_pos[0] + obj_dim[0])
-        y_range = (obj_pos[1], obj_pos[1] + obj_dim[1])
-        
-        kw['key'] = 'o(' + str(obj_pos[0]) + ',' + str(obj_pos[1]) + ')'
-        vxS = scheme.getVoxelScenario(x_range, y_range)
-        refInput = _calLinkAtten(cal, vxS, **kw)
-        
-        return refInput
-    elif kw['form'] == 'lt':
-        center_x = coordX[0] 
-        center_y = coordY[0] - obj_dim[1]
-
-        x_range = (center_x - obj_dim[0]/2, center_x + obj_dim[0]/2)
-        y_range = (center_y - obj_dim[1]/2, center_y + obj_dim[1]/2)
-
-        kw['key'] = 'lt'
-        vxS = scheme.getVoxelScenario(x_range, y_range)
-        refInput = _calLinkAtten(cal, vxS,  **kw)
-            
-        return refInput
-    elif kw['form'] == 'ct':
-        center_x = coordX[0] + dx/2
-        center_y = coordY[0] - obj_dim[1]
-
-        x_range = (center_x - obj_dim[0]/2, center_x + obj_dim[0]/2)
-        y_range = (center_y - obj_dim[1]/2, center_y + obj_dim[1]/2)
-
-        kw['key'] = 'ct'
-        vxS = scheme.getVoxelScenario(x_range, y_range)
-        refInput = _calLinkAtten(cal, vxS,  **kw)
-            
-        return refInput
-    elif kw['form'] == 'rt':
-        center_x = coordX[-1] - obj_dim[0]
-        center_y = coordY[0] - obj_dim[1]
-
-        x_range = (center_x - obj_dim[0]/2, center_x + obj_dim[0]/2)
-        y_range = (center_y - obj_dim[1]/2, center_y + obj_dim[1]/2)
-
-        kw['key'] = 'rt'
-        vxS = scheme.getVoxelScenario(x_range, y_range)
-        refInput = _calLinkAtten(cal, vxS,  **kw)
-            
-        return refInput    
-    elif kw['form'] == 'lc':
-        center_x = coordX[0] 
-        center_y = coordY[0] + dy/2
-
-        x_range = (center_x - obj_dim[0]/2, center_x + obj_dim[0]/2)
-        y_range = (center_y - obj_dim[1]/2, center_y + obj_dim[1]/2)
-
-        kw['key'] = 'lc'
-        vxS = scheme.getVoxelScenario(x_range, y_range)
-        refInput = _calLinkAtten(cal, vxS,  **kw)
-            
-        return refInput
-    elif kw['form'] == 'cc':
-        center_x = coordX[0] + dx/2
-        center_y = coordY[0] + dy/2
-
-        x_range = (center_x - obj_dim[0]/2, center_x + obj_dim[0]/2)
-        y_range = (center_y - obj_dim[1]/2, center_y + obj_dim[1]/2)
-
-        kw['key'] = 'cc'
-        vxS = scheme.getVoxelScenario(x_range, y_range)
-        refInput = _calLinkAtten(cal, vxS,  **kw)
-        
-        return refInput
-    elif kw['form'] == 'rc':
-        center_x = coordX[-1] - obj_dim[0]
-        center_y = coordY[0] + dy/2
-
-        x_range = (center_x - obj_dim[0]/2, center_x + obj_dim[0]/2)
-        y_range = (center_y - obj_dim[1]/2, center_y + obj_dim[1]/2)
-
-        kw['key'] = 'rc'
-        vxS = scheme.getVoxelScenario(x_range, y_range)
-        refInput = _calLinkAtten(cal, vxS,  **kw)
-            
-        return refInput
-    elif kw['form'] == 'lb':
-        center_x = coordX[0] 
-        center_y = coordY[0] 
-
-        x_range = (center_x - obj_dim[0]/2, center_x + obj_dim[0]/2)
-        y_range = (center_y - obj_dim[1]/2, center_y + obj_dim[1]/2)
-
-        kw['key'] = 'lb'
-        vxS = scheme.getVoxelScenario(x_range, y_range)
-        refInput = _calLinkAtten(cal, vxS,  **kw)
-            
-        return refInput
-    elif kw['form'] == 'cb':
-        center_x = coordX[0] + dx/2
-        center_y = coordY[0] 
-
-        x_range = (center_x - obj_dim[0]/2, center_x + obj_dim[0]/2)
-        y_range = (center_y - obj_dim[1]/2, center_y + obj_dim[1]/2)
-
-        kw['key'] = 'cb'
-        vxS = scheme.getVoxelScenario(x_range, y_range)
-        refInput = _calLinkAtten(cal, vxS,  **kw)
-            
-        return refInput
-    elif kw['form'] == 'rb':
-        center_x = coordX[-1] - obj_dim[0]
-        center_y = coordY[0]
-
-        x_range = (center_x - obj_dim[0]/2, center_x + obj_dim[0]/2)
-        y_range = (center_y - obj_dim[1]/2, center_y + obj_dim[1]/2)
-
-        kw['key'] = 'rb'
-        vxS = scheme.getVoxelScenario(x_range, y_range)
-        refInput = _calLinkAtten(cal, vxS,  **kw)
-            
-        return refInput
-    
-    elif kw['form'] == 'ref':
-        x_range_l = (coordX[0], coordX[0] + dx/10)
-        x_range_c = (coordX[0] + 4.5*dx/10, coordX[0] + 5.5*dx/10)
-        x_range_r = (coordX[0] + 9*dx/10, coordX[0] + 10*dx/10)
-    
-        y_range_b = (coordY[0], coordY[0] + dy/10)
-        y_range_c = (coordY[0] + 4.5*dy/10, coordY[0] + 5.5*dy/10)
-        y_range_t = (coordY[0] + 9*dy/10, coordY[0] + 10*dy/10)
-    
-        kw['key'] = 'r'    
-        vxS_lb = scheme.getVoxelScenario(x_range_l, y_range_b)
-        vxS_cb = scheme.getVoxelScenario(x_range_c, y_range_b)
-        vxS_rb = scheme.getVoxelScenario(x_range_r, y_range_b)
-        vxS_lc = scheme.getVoxelScenario(x_range_l, y_range_c)
-        vxS_cc = scheme.getVoxelScenario(x_range_c, y_range_c)
-        vxS_rc = scheme.getVoxelScenario(x_range_r, y_range_c)
-        vxS_lt = scheme.getVoxelScenario(x_range_l, y_range_t)
-        vxS_ct = scheme.getVoxelScenario(x_range_c, y_range_t)
-        vxS_rt = scheme.getVoxelScenario(x_range_r, y_range_t)
-    
-        refInput = {}
-        refInput['lb'] = _calLinkAtten(cal, vxS_lb, **kw)
-        refInput['cb'] = _calLinkAtten(cal, vxS_cb, **kw)
-        refInput['rb'] = _calLinkAtten(cal, vxS_rb, **kw)
-        refInput['lc'] = _calLinkAtten(cal, vxS_lc, **kw)
-        refInput['cc'] = _calLinkAtten(cal, vxS_cc, **kw)
-        refInput['rc'] = _calLinkAtten(cal, vxS_rc, **kw)
-        refInput['lt'] = _calLinkAtten(cal, vxS_lt, **kw)
-        refInput['ct'] = _calLinkAtten(cal, vxS_ct, **kw)
-        refInput['rt'] = _calLinkAtten(cal, vxS_rt, **kw)
-    
-        return refInput
+    if 'form' in kw:
+        kw['key'] = kw['form']
     else:
-        raise ValueError('input not defined')
+        kw['key'] = 'o(' + str(obj_pos[0]) + ',' + str(obj_pos[1]) + ')'
+    
+    x_range = (obj_pos[0], obj_pos[0] + obj_dim[0])
+    y_range = (obj_pos[1], obj_pos[1] + obj_dim[1])
+        
+    vxS = scheme.getVoxelScenario(x_range, y_range)
+    return _calLinkAtten(cal, vxS,  **kw)
 
 def _calLinkAtten(cal, vxS, **kw):
     try:

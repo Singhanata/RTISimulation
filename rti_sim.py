@@ -6,7 +6,6 @@ Created on Thu Jun  3 18:44:39 2021
 import os
 from datetime import datetime
 
-from rti_util import Position
 from rti_estimator import RTIEstimator
 from rti_scheme_sideposition import SidePositionScheme
 from rti_scheme_rectangular import RectangularScheme
@@ -50,68 +49,68 @@ class RTISimulation():
                 title_vx + title_SC + title_SR + title_sch + title_cal)
 
     def process_routine(self, **kw):
-        l_area = 10
-        if 'l_area' in kw:
-            l_area = kw['l_area']
-        w_area = 10
-        if 'w_area' in kw:
-            w_area = kw['w_area']
-        vx_dim = 0.5
-        if 'vx_dim' in kw:
-            vx_dim = kw['vx_dim']
-        n_sensor = 20
+        ref_pos = (0., 0.)
+        if 'reference_position' in kw:
+            ref_pos = kw['reference_position']
+        a_dim = (10., 10.) 
+        if 'area_dimension' in kw:
+            a_dim = kw['area_dimension']
+        wa_dim = a_dim
+        if 'sensing_area_dimension' in kw:
+            wa_dim = kw['sensing_area_dimension']
+        vx_dim = (0.5, 0.5)
+        if 'voxel_dim' in kw:
+            vx_dim = kw['voxel_dim']
+        n_s = 20
         if 'n_sensor' in kw:
-            n_sensor = kw['n_sensor']
-        ref_pos = Position(0., 0.)
-        if 'ref_pos' in kw:
-            ref_pos = kw['ref_pos']
+            n_s = kw['n_sensor']
         schemeType = 'SW'
         if 'schemeType' in kw:
             schemeType = kw['schemeType']
-        weightalgorithm = 'EL'
+        weightAlgorithm = 'EL'
         if 'weightalgorithm' in kw:
-            weightalgorithm = kw['weightalgorithm']
+            weightAlgorithm = kw['weightalgorithm']
 
         if schemeType == 'SW':
             self.scheme = SidePositionScheme(ref_pos,
-                                             w_area,      # area_width
-                                             l_area,      # area_length
-                                             vx_dim,      # vx_width
-                                             vx_dim,      # vx_length
-                                             w_area,      # wa_width
-                                             l_area,      # wa_length
-                                             n_sensor)    # n_sensor
+                                             a_dim[0],    # area_width
+                                             a_dim[1],    # area_length
+                                             vx_dim[0],   # vx_width
+                                             vx_dim[1],   # vx_length
+                                             wa_dim[0],   # wa_width
+                                             wa_dim[1],   # wa_length
+                                             n_s)         # n_sensor
         elif schemeType == 'RE':
             self.scheme = RectangularScheme(ref_pos,
-                                            w_area,       # area_width
-                                            l_area,       # area_length
-                                            vx_dim,       # vx_width
-                                            vx_dim,       # vx_length
-                                            w_area,       # wa_width
-                                            l_area,       # wa_length
-                                            n_sensor)     # n_sensor
+                                             a_dim[0],    # area_width
+                                             a_dim[1],    # area_length
+                                             vx_dim[0],   # vx_width
+                                             vx_dim[1],   # vx_length
+                                             wa_dim[0],   # wa_width
+                                             wa_dim[1],   # wa_length
+                                             n_s)         # n_sensor
         else:
             ValueError('Scheme Type not exist')
 
-        if weightalgorithm == 'LS':
+        if weightAlgorithm == 'LS':
             if 'cal_mode' in kw:
                 self.calculator = LineWeightingRTICalculator(self.scheme,
                                                              kw['cal_mode'])
             else:
                 self.calculator = LineWeightingRTICalculator(self.scheme)
-        elif weightalgorithm == 'EL':
+        elif weightAlgorithm == 'EL':
             if 'lambda_coeff' in kw:
                 self.calculator = EllipseRTICalculator(self.scheme,
                                                        kw['lambda_coeff'])
             else:
                 self.calculator = EllipseRTICalculator(self.scheme)
-        elif weightalgorithm == 'EX':
+        elif weightAlgorithm == 'EX':
             if 'sigma_w' in kw:
                 self.calculator = ExpDecayRTICalculator(self.scheme,
                                                         kw['sigma_w'])
             else:
                 self.calculator = ExpDecayRTICalculator(self.scheme)
-        elif weightalgorithm == 'IN':
+        elif weightAlgorithm == 'IN':
             if 'lambda_min' in kw:
                 self.calculator = InvAreaRTICalculator(self.scheme,
                                                        kw['lambda_min'])
@@ -128,8 +127,8 @@ class RTISimulation():
 
         fdn = self.res_dir
         title = ''
-        if 'add_title' in kw:
-            title += kw['add_title'] + '-'
+        if 'title' in kw:
+            title += kw['title'] + '-'
         fdn =  os.sep.join([fdn, (title + self.getTitle('', True))]) 
         try:
             os.mkdir(fdn)
@@ -155,7 +154,18 @@ class RTISimulation():
         save_path['gfx'] = fn_fig
         save_path['rec'] = fn_rec
         save_path['conc'] = fn_con
-        return save_path
+        
+        return  kw, save_path
 
+    def coorD(self, **kw):
+        if 'axis' in kw:
+            axis = kw['axis']
+            if axis == 0:
+                return self.scheme.coordX
+            elif axis == 1:
+                return self.scheme.coordY
+            else:
+                raise ValueError('axis not defined')
+        return (self.scheme.coordX, self.scheme.coordY) 
     
-            
+        

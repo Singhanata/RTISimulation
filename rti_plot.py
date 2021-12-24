@@ -4,15 +4,16 @@ Created on Fri Oct 22 10:48:27 2021
 
 @author: krong
 """
+import os
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import cm
 from matplotlib.ticker import LinearLocator
 
 def plotRTIIm(scheme, iM, **kw):
-    path = ''
-    if 'path' in kw:
-        path = kw['path']
+    filename = ''
+    if 'filename' in kw:
+        filename = kw['filename']
     title = ''
     if 'title' in kw:
         title = kw['title']
@@ -62,15 +63,19 @@ def plotRTIIm(scheme, iM, **kw):
                     c=s_color,
                     marker=s_marker)
     plt.grid()
-    if path:        
-        fn = path + '.svg'
-        plt.savefig(fn)
+    if filename:
+        if 'path' in kw:
+            fn = os.sep.join([kw['path'], 
+                             (filename + '.svg')])
+        else:
+            fn = (filename + '.svg')
+        plt.savefig(fn)    
     plt.show()
 
 def plotDerivative(scheme, de, **kw):
-    path = ''
-    if 'path' in kw:
-        path = kw['path']
+    filename = ''
+    if 'filename' in kw:
+        filename = kw['filename']
     title = ''
     if 'title' in kw:
         title = kw['title']
@@ -134,15 +139,19 @@ def plotDerivative(scheme, de, **kw):
                     c=s_color,
                     marker=s_marker)
     plt.grid()
-    if path:        
-        fn = path + '_derivative.svg'
-        plt.savefig(fn)
+    if filename:
+        if 'path' in kw:
+            fn = os.sep.join([kw['path'], 
+                             (filename + '.svg')])
+        else:
+            fn = (filename + '.svg')
+        plt.savefig(fn)    
     plt.show()
 
 def plotSurface(scheme, Z, **kw):
-    path = ''
-    if 'path' in kw:
-        path = kw['path']
+    filename = ''
+    if 'filename' in kw:
+        filename = kw['filename']
     title = ''
     if 'title' in kw:
         title = kw['title']
@@ -185,8 +194,72 @@ def plotSurface(scheme, Z, **kw):
                      shrink=0.5,
                      aspect=5)
     if label: cb.set_label(label)
-    if path:        
-        fn = path + '.svg'
+    if filename:
+        if 'path' in kw:
+            fn = os.sep.join(kw['path'], 
+                             (filename + '.svg'))
+        else:
+            fn = (filename + '.svg')
         plt.savefig(fn)
-
     plt.show()
+    
+def process_boxplot(data, **kw):
+    fig, ax = plt.subplots(1,1)
+    
+    bp = plt.boxplot(data, 
+                     patch_artist = True,
+                     notch = True,
+                     zorder=1)
+    
+    if 'title' in kw:
+        ax.set_title(kw['title'], pad=10)
+    if 'ticklabel' in kw:
+        ax.set_xticklabels(kw['ticklabel'])
+    if 'xlabel' in kw:
+        ax.set_xlabel(kw['xlabel'])
+    if 'ylabel' in kw:
+        ax.set_ylabel(kw['ylabel'])
+    
+    plt.grid()
+    
+    colors = ['b', 'g',
+              'r', 'violet', 
+              'white', 'yellow']
+ 
+    for patch, color in zip(bp['boxes'], colors):
+        patch.set_facecolor(color)
+        patch.set(linewidth = 1.5)
+    # changing color and linewidth of
+    # whiskers
+    for whisker in bp['whiskers']:
+        whisker.set(color ='black',
+                    linewidth = 2,
+                    linestyle ="--")
+     
+    # changing color and linewidth of
+    # caps
+    for cap in bp['caps']:
+        cap.set(color ='black',
+                linewidth = 5)
+     
+    # changing color and linewidth of
+    # medians
+    for median in bp['medians']:
+        median.set(color ='black',
+                   linewidth = 3)
+     
+    # changing style of fliers
+    for flier in bp['fliers']:
+        flier.set(marker ='D',
+                  markersize = 5,
+                  color ='black',
+                  alpha = 0.5)
+    if 'filename' in kw:
+        if 'path' in kw:
+            fn = os.sep.join([kw['path'], 
+                             (kw['filename'] + '.svg')])
+        else:
+            fn = (kw['filename'] + '.svg')
+        plt.savefig(fn)     
+    plt.show()
+ 

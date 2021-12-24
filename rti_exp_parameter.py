@@ -5,15 +5,9 @@ Created on Mon Dec 20 11:45:15 2021
 @author: krong
 """
 
-import numpy as np
-import os
 
-from rti_eval import RMSEEvaluation as calRMSE
-from rti_eval import derivativeEval as calDerivative
-from rti_rec import result_record
-
-from rti_sim_input import simulateInput
-from rti_plot import plotRTIIm, plotDerivative
+from rti_eval import RTIEvaluation, RecordIndex
+from rti_sim_input import reference_object_position, simulateInput
 
 def process_alpha(sim):
     """
@@ -32,80 +26,54 @@ def process_alpha(sim):
     -------
     None.
 
-    """
+    """    
+    obj_dim = (1., 1.)
     
-    s_graphic = True
-    s_rec = True
+    ev = RTIEvaluation(['snr', 'alpha'],
+                       ['SNR', r'$\alpha$'],
+                         [RecordIndex.RMSE_ALL,
+                          RecordIndex.DERIVATIVE_BORDER,
+                          RecordIndex.DERIVATIVE_BORDERRATIO,
+                          RecordIndex.DERIVATIVE_NONBORDER,
+                          RecordIndex.DERIVATIVE_NONBORDERRATIO],
+                          param1 = [1, 10, 100, 1000],
+                          param2 = [0.01, 0.1, 1, 10, 100],
+                          sample_size = 10,
+                          gfx_enabled = False,
+                          record_enabled=False)
     
-    obj_dim_x = 1
-    obj_dim_y = 1
-    snr = [1, 10, 100, 1000]
-    sample_size = 100
-    alp = [0.01, 0.1, 1., 10., 100]
-    rmse = np.zeros((len(alp), len(snr), sample_size))
-    der_border = np.zeros((len(alp), len(snr), sample_size))
-    der_borderratio = np.zeros((len(alp), len(snr), sample_size))
-    der_nonborder = np.zeros((len(alp), len(snr), sample_size))
-    der_nonborderratio = np.zeros((len(alp), len(snr), sample_size))
-    for idx, al in enumerate(alp):
+    for idx, al in enumerate(ev.param1):
         # check each alpha 
-        savepath = sim.process_routine(l_area=10,
-                                   w_area=10,
-                                   vx_dim=0.5,
-                                   n_sensor=20,
-                                   schemeType='SW',
-                                   weightalgorithm='LS',
-                                   alpha=al,
-                                   add_title='alpha')
-        record = {}
-        record['x'] = np.asarray(sim.scheme.selection.coordX)
-        record['y'] = np.asarray(sim.scheme.selection.coordY) 
-        for idx_snr, sn in enumerate(snr):
+        setting, savepath = sim.process_routine(
+                                        area_dimension=(10.,10.),
+                                        voxel_dimension=(0.5,0.5),
+                                        n_sensor=20,
+                                        schemeType='SW',
+                                        weightalgorithm='LS',
+                                        alpha=al,
+                                        title='alpha')
+        setting['object_dimension'] = obj_dim
+        for idx_snr, sn in enumerate(ev.param2):
             # check each snr
+            obj_pos = reference_object_position(sim.coorD(), ['cc'])
             refInput = simulateInput(sim.scheme,
                              sim.calculator,
-                             (obj_dim_x, obj_dim_y),
-                             form = 'cc',
+                             obj_dim,
+                             obj_pos[0],
                              snr = sn,
-                             sample_size = sample_size,
+                             sample_size = ev.sample_size,
+                             form = 'cc',
                              mode = 2)
             for key, value in refInput.items():
+                # calculate image
                 iM = (sim.estimator.calVoxelAtten(value[0]))
-                r = calRMSE(value[1], iM)
-                de = calDerivative(value[1], 
-                                   iM, 
-                                   obj_pos = (4.5, 4.5),
-                                   obj_dim = (1., 1.))
-                record['ref'] = value[1]
-                record['image'] = iM
-                record['rmse'] = r
-                record['derivative'] = de
-                if s_graphic:
-                    gfx_name = sim.getTitle('', True) + '_' + key
-                    fn_f = os.sep.join([savepath['gfx'], gfx_name])
-                    plotRTIIm(sim.scheme,
-                              iM, 
-                              path = fn_f,
-                              title = sim.getTitle(), 
-                              label = 'Rel. Attenuation',  
-                              rmse = r['rmse_all'])
-                    plotDerivative(sim.scheme,
-                                   de,
-                                   path = fn_f,
-                                   title = sim.getTitle(),
-                                   label = 'Derivative of Attenuation',
-                                   caption = 'border@' 
-                                   + '{:.3f}'.format(de['border'])
-                                   + ', '
-                                   + 'non-border@' 
-                                   + '{:.3f}'.format(de['non-border']))
-                if s_rec:
-                    result_record(savepath['rec'], key, record)
-                rmse[idx][idx_snr][value[2]] = r['rmse_all']
-                der_border[idx][idx_snr][value[2]] = de['border']
-                der_borderratio[idx][idx_snr][value[2]] = de['border_ratio']
-                der_nonborder[idx][idx_snr][value[2]] = de['non-border']
-                der_nonborderratio[idx][idx_snr][value[2]] = de['non-border_ratio']
-
+                # result evaluation
+                ev.evaluate(sim,
+                            value[0],
+                            value[1],
+                            iM,
+                            (idx, idx_snr, value[2]),
+                            key,
+                            savepath)
     # conclude the results
-    
+    ev.conclude(savepath['conc'], setting)

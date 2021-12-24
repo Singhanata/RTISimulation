@@ -13,7 +13,7 @@ import numpy as np
 class RectangularScheme(RTIScheme):
     def __init__(
             self,
-            ref_pos= Position(0.,0.),
+            ref_pos=(0.,0.),
             area_width=10.,
             area_length=10.,
             vx_width=1.,

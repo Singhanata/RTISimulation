@@ -12,7 +12,7 @@ import numpy as np
 class SidePositionScheme(RTIScheme):
     def __init__(
             self,
-            ref_pos= Position(0.,0.),
+            ref_pos=(0.,0.),
             area_width=6.,
             area_length=10.,
             vx_width=1.,
@@ -75,8 +75,8 @@ class SidePositionScheme(RTIScheme):
         leftSideSensorS = []
         rightSideSensorS = []
         for y in s_pos_y:
-            leftSideSensorS.append(Sensor(Position(self.rtiGrid.min_x, y)))
-            rightSideSensorS.append(Sensor(Position(self.rtiGrid.max_x, y)))
+            leftSideSensorS.append(Sensor((self.rtiGrid.min_x, y)))
+            rightSideSensorS.append(Sensor((self.rtiGrid.max_x, y)))
 
         sensorS = tuple([leftSideSensorS, rightSideSensorS])
         return sensorS
@@ -105,10 +105,10 @@ class SidePositionScheme(RTIScheme):
             DESCRIPTION.
 
         """
-        xls = [s.pos.x for s in self.sensorS[0]]
-        yls = [s.pos.y for s in self.sensorS[0]]
-        xrs = [s.pos.x for s in self.sensorS[1]]
-        yrs = [s.pos.y for s in self.sensorS[1]]
+        xls = [s.pos[0] for s in self.sensorS[0]]
+        yls = [s.pos[1] for s in self.sensorS[0]]
+        xrs = [s.pos[0] for s in self.sensorS[1]]
+        yrs = [s.pos[1] for s in self.sensorS[1]]
 
         xs = xls + xrs
         ys = yls + yrs

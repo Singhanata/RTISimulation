@@ -4,50 +4,147 @@ Created on Wed Mar 31 14:54:08 2021
 
 @author: krong
 """
-
 import numpy as np
 import math
 
-def RMSEEvaluation(reF, reS, **kw):
+from rti_rec import RecordIndex, result_record, conclude_record
+from rti_plot import plotRTIIm, plotDerivative, process_boxplot
+
+class RTIEvaluation:
+    def __init__(self, paramset, paramlabel, resultset, **kw):
+        self.paramset = paramset
+        self.paramlabel = paramlabel
+        self.resultset = resultset
+        self.gfx_enabled = False
+        self.rec_enabled = False
+        if 'gfx_enabled' in kw:
+            self.gfx_enabled = kw['gfx_enabled']
+        if 'rec_enabled' in kw:
+            self.rec_enabled = kw['record_enabled']
+        self.data = {}
+        datadim = []
+        if 'param1' in kw:
+            self.param1 = kw['param1']
+            datadim.append(len(kw['param1']))
+        if 'param2' in kw:
+            self.param2 = kw['param2']
+            datadim.append(len(kw['param2']))
+        if 'param3' in kw:
+            self.param3 = kw['param3']
+            datadim.append(len(kw['param3']))
+        else:
+            if 'sample_size' in kw and kw['sample_size'] > 1:
+                self.sample_size = kw['sample_size'] 
+                datadim.append(kw['sample_size']) 
+        for l in resultset:    
+            self.data[l] = np.zeros(datadim)
+            
+    def evaluate(self, sim, l_a, reF, imagE, idx, key, savepath):
+        r = RMSEEvaluation(reF, imagE)
+        r.update(derivativeEval(reF, imagE))
+        for i, e in enumerate(self.resultset):
+            self.data[e][idx[0]][idx[1]][idx[2]] = r[e.name]
+        
+        if self.rec_enabled: result_record(savepath['rec'], 
+                                    key, 
+                                    x = sim.coorD(axis=0),
+                                    y = sim.coorD(axis=1),
+                                    ref = reF,
+                                    image = imagE,
+                                    results = r)
+        if self.gfx_enabled:
+            plotRTIIm(sim.scheme,
+                    imagE, 
+                    path = savepath['gfx'],
+                    filename = sim.getTitle('', True) + '_' + key,
+                    title = sim.getTitle(), 
+                    label = 'Rel. Attenuation',  
+                    rmse = r['rmse_all'])
+            plotDerivative(sim.scheme,
+                    r,
+                    path = savepath['gfx'],
+                    filename = sim.getTitle('', True) + '_' + key,
+                    title = sim.getTitle(),
+                    label = 'Derivative of Attenuation',
+                    caption = 'border@' 
+                    + '{:.3f}'.format(r['border'])
+                    + ', '
+                    + 'non-border@' 
+                    + '{:.3f}'.format(r['non-border']))
+        return r
+
+    def conclude(self, savepath, setting):
+        # record results
+        conclude_record(savepath, setting, self)
+        # show gfx
+        for e in self.resultset:
+            yLabel = e.name
+            ptitle = ('a@' + str(setting['area_dimension']) +  
+                     'v@' + str(setting['voxel_dimension']) + 
+                     'o@' + str(setting['object_dimension']) + 
+                     'n@' + str(setting['n_sensor']) + '-' +
+                     setting['schemeType'] +
+                     setting['weightalgorithm'] + '-')
+            p = self.paramset[0]
+            xlabel = self.paramlabel[1]
+            tl = ptitle + p + '@'
+            for i, v in enumerate(self.param1):
+                tlv = tl + str(v)
+                process_boxplot(self.data[e][i].T, 
+                                title = tlv,
+                                xlabel = xlabel,
+                                ylabel = yLabel,
+                                ticklabel = self.param2,
+                                path = savepath,
+                                filename = e.name + '-' + tlv)
+        
+        for e in self.resultset:
+            yLabel = e.name
+            ptitle = ('a@' + str(setting['area_dimension']) +  
+                     'v@' + str(setting['voxel_dimension']) + 
+                     'o@' + str(setting['object_dimension']) + 
+                     'n@' + str(setting['n_sensor']) + '-' +
+                     setting['schemeType'] +
+                     setting['weightalgorithm'] + '-')
+            p = self.paramset[1]
+            tl = ptitle + p + '@'
+            xlabel = self.paramlabel[0]
+            for i, v in enumerate(self.param2):
+                tlv = tl + str(v)
+                data = []
+                for j in range(len(self.param1)):
+                    data.append(self.data[e][j][i])
+                process_boxplot(data, 
+                                title = tlv,
+                                xlabel = xlabel,
+                                ylabel = yLabel,
+                                ticklabel = self.param1,
+                                path = savepath,
+                                filename = e.name + '-' + tlv)
+        
+                
+                
+def RMSEEvaluation(reF, reS):
     results = {}
     idx_obJ = (reF==1)
     idx_noN = (reF==0)
-    
-    question = ''
-    if 'question' in kw:
-        question = kw['question']
-    
-    if not question:
-        results['rmse_all'] = math.sqrt(np.square(np.subtract(reF, 
-                                                              reS)).mean())
-      
-        results['obj_mean'] = reS[idx_obJ].mean()
-        results['non_mean'] = reS[idx_noN].mean()
-        results['rmse_obj'] = math.sqrt(np.square(np.subtract(reF[idx_obJ],
-                                                              reS[idx_obJ]))
-                                                                .mean())
-        results['rmse_non'] = math.sqrt(np.square(np.subtract(reF[idx_noN],
-                                                          reS[idx_noN]))
+
+    results[RecordIndex.OBJ_MEAN.name] = reS[idx_obJ].mean()
+    results[RecordIndex.NON_MEAN.name] = reS[idx_noN].mean()
+    results[RecordIndex.RMSE_ALL.name] = math.sqrt(
+                                            np.square(np.subtract(reF, 
+                                                          reS)).mean())
+    results[RecordIndex.RMSE_OBJ.name] = math.sqrt(
+                                            np.square(np.subtract(reF[idx_obJ],
+                                                          reS[idx_obJ]))
                                                             .mean())
-    elif question == 'all':
-        results['rmse_all'] = math.sqrt(np.square(np.subtract(reF, 
-                                                              reS)).mean())
-    elif question == 'non':
-        results['non_mean'] = reS[idx_noN].mean()
-        results['rmse_non'] = math.sqrt(np.square(np.subtract(reF[idx_noN],
-                                                          reS[idx_noN]))
-                                                            .mean())
-    elif question == 'obj':
-        results['obj_mean'] = reS[idx_obJ].mean()
-        results['rmse_obj'] = math.sqrt(np.square(np.subtract(reF[idx_obJ],
-                                                              reS[idx_obJ]))
-                                                                .mean())
-    else:
-        raise ValueError('question is not defined')
-        
+    results[RecordIndex.RMSE_NON.name] = math.sqrt(
+                                            np.square(np.subtract(reF[idx_noN],
+                                                      reS[idx_noN]))
+                                                        .mean())
     return results
 
-def derivativeEval(reF, reS, **kw):
+def derivativeEval(reF, reS):
     results = {}
 
     idx_obJ = (reF==1)
@@ -55,33 +152,58 @@ def derivativeEval(reF, reS, **kw):
     idx_nonBordeR = (~idx_bordeR)
     idx_noN = (reF==0)
 
-    question = ''
-    if 'question' in kw:
-        question = kw['question'] 
+    results[RecordIndex.DERIVATIVE_X.name] = calDerivative(reS, 
+                                                           axis='x', 
+                                                           direction = 'f')
 
-    if not question:
-        results['x'] = calDerivative(reS, axis='x', direction = 'f')
-        results['y'] = calDerivative(reS, axis='y', direction = 'f')
-        results['abs'] = np.sqrt(results['x']**2 + results['y']**2)
-        results['mean'] = results['abs'].mean()
-        results['obj-derivative'] = results['abs'][idx_obJ].mean()
-        results['non-derivative'] = results['abs'][idx_noN].mean()
-        results['border'] = results['abs'][idx_bordeR].mean()
-        results['non-border'] = results['abs'][idx_nonBordeR].mean()
-        results['border_ratio'] = results['border']/results['mean']
-        results['non-border_ratio'] = results['non-border']/results['mean']        
-    elif question == 'x':
-        results['x'] = calDerivative(reS, axis='x', direction = 'f')
-    elif question == 'y':
-        results['y'] = calDerivative(reS, axis='y', direction = 'f')
-    else:
-        raise ValueError('question is not defined')
+    results[RecordIndex.DERIVATIVE_Y.name] = calDerivative(reS, 
+                                                           axis='y', 
+                                                           direction = 'f')
+
+    results[RecordIndex.DERIVATIVE_ABS.name] = np.sqrt(results[RecordIndex
+                                                                 .DERIVATIVE_X
+                                                                 .name]**2 
+                                                       + results[RecordIndex
+                                                                 .DERIVATIVE_Y
+                                                                 .name]**2)
+
+    results[RecordIndex.DERIVATIVE_MEAN.name] = results[RecordIndex
+                                                        .DERIVATIVE_ABS
+                                                        .name].mean()
+
+    results[RecordIndex.DERIVATIVE_OBJ.name] = (results[RecordIndex
+                                                        .DERIVATIVE_ABS
+                                                        .name]
+                                                        [idx_obJ]
+                                                        .mean())
+    results[RecordIndex.DERIVATIVE_NON.name] = (results[RecordIndex
+                                                        .DERIVATIVE_ABS
+                                                        .name]
+                                                        [idx_noN]
+                                                        .mean())
+    results[RecordIndex.DERIVATIVE_BORDER.name] = (results[RecordIndex
+                                                           .DERIVATIVE_ABS
+                                                           .name]
+                                                           [idx_bordeR]
+                                                           .mean())
+    results[RecordIndex.DERIVATIVE_NONBORDER.name] = (results[RecordIndex
+                                                           .DERIVATIVE_ABS
+                                                           .name]
+                                                           [idx_nonBordeR]
+                                                           .mean())
+    results[RecordIndex.DERIVATIVE_BORDERRATIO.name] = (results[RecordIndex
+                                                           .DERIVATIVE_BORDER
+                                                           .name]
+                                                    /results[RecordIndex
+                                                            .DERIVATIVE_MEAN
+                                                            .name])
+    results[RecordIndex.DERIVATIVE_NONBORDERRATIO.name] = (results[RecordIndex
+                                                        .DERIVATIVE_NONBORDER
+                                                        .name]
+                                                    /results[RecordIndex
+                                                            .DERIVATIVE_MEAN
+                                                            .name])
     
-    if 'indexOfInterest' in kw:
-        a_x = kw['indexOfInterest'][0]
-        a_y = kw['indexOfInterest'][1]
-        results['x_interest'] = results['x'][:,a_x]
-        results['y_interest'] = results['y'][a_y,:]
     return results
 
 def calDerivative(iM, **kw):
@@ -204,6 +326,16 @@ def _getBorderIdx(idx_obJ):
     bR = np.roll(idx_obJ, 1, axis=1)
     bR = (bU!=idx_obJ)
     
-    return (bU|bD|bL|bR)
+    bUL = np.roll(bU, -1, axis=1)
+    bUR = np.roll(bU, 1, axis=1)
+    bDL = np.roll(bD, -1, axis=1)
+    bDR = np.roll(bD, 1, axis=1)
+
+    bLU = np.roll(bL, -1, axis=0)
+    bLD = np.roll(bU, 1, axis=0)
+    bRU = np.roll(bD, -1, axis=0)
+    bRD = np.roll(bD, 1, axis=0)
+    
+    return (bU|bD|bL|bR|bUL|bUR|bDL|bDR|bLU|bLD|bRU|bRD)
 
 

@@ -116,7 +116,7 @@ class EllipseRTICalculator(RTIWeightCalculator):
                 idx_x = int(self.scheme.selection.getXIndex(x,
                                                             True))
                 for y in y_voxeL_l:
-                    if(linkS[l].calDistanceFromNode(Position(x,y)) <= d + lambda_e):
+                    if(linkS[l].calDistanceFromNode((x,y)) <= d + lambda_e):
                         idx_y = int(self.scheme.selection.getYIndex(y,
                                                                     True))
                         if idx_x < len(binaryR) and idx_y < len(binaryR[0]):

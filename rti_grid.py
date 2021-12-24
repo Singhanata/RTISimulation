@@ -108,10 +108,10 @@ class RTIGrid:
         self.sy_span = sy_span
 
         try:
-            self.min_x = ref_pos.x
-            self.min_y = ref_pos.y
-            self.max_x = ref_pos.x + x_span
-            self.max_y = ref_pos.y + y_span
+            self.min_x = ref_pos[0]
+            self.min_y = ref_pos[1]
+            self.max_x = ref_pos[0] + x_span
+            self.max_y = ref_pos[1] + y_span
         except:
             raise TypeError('The given position has no attribute "x" or "y"')
         self.nx = self.x_span/self.gx_span

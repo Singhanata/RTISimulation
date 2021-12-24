@@ -6,31 +6,12 @@ Created on Thu Jul 30 07:35:20 2020
 from math import sqrt
 
 class Position:
-    """
-
-    """
-    def __init__(self, x, y):
-        """
-        Parameters
-        ----------
-        x : float
-            x coordination
-        y : float
-            y coordination
-        Returns
-        -------
-        None.
-
-        """
-        self.x = x
-        self.y = y
-
     def calDistance(p1,p2):
-        d = sqrt((p1.x - p2.x)**2 + (p1.y - p2.y)**2)
+        d = sqrt((p1[0] - p2[0])**2 + (p1[1] - p2[1])**2)
         return d
     
-    def toString(self):
-        s = '(' + str(self.x) + ', ' + str(self.y) + ')'
+    def toString(obj):
+        s = '(' + str(obj[0]) + ', ' + str(obj[1]) + ')'
         return s
 
 class Sensor:
@@ -77,24 +58,24 @@ class RTILink:
         return (self.tx.pos, self.rx.pos)
 
     def getXDiff(self):
-        return self.rx.pos.x - self.tx.pos.x
+        return self.rx.pos[0] - self.tx.pos[0]
 
     def getYDiff(self):
-        return self.rx.pos.y - self.tx.pos.y
+        return self.rx.pos[1] - self.tx.pos[1]
 
     def getXRange(self):
-        return [min(self.tx.pos.x, self.rx.pos.x),
-                    max(self.tx.pos.x, self.rx.pos.x)]
+        return [min(self.tx.pos[0], self.rx.pos[0]),
+                    max(self.tx.pos[0], self.rx.pos[0])]
 
     def getYRange(self):
-        return [min(self.tx.pos.y, self.rx.pos.y),
-                    max(self.tx.pos.y, self.rx.pos.y)]
+        return [min(self.tx.pos[1], self.rx.pos[1]),
+                    max(self.tx.pos[1], self.rx.pos[1])]
 
     def getXRatio(self, x):
-        x1 = self.tx.pos.x
-        x2 = self.rx.pos.x
-        y1 = self.tx.pos.y
-        y2 = self.rx.pos.y
+        x1 = self.tx.pos[0]
+        x2 = self.rx.pos[0]
+        y1 = self.tx.pos[1]
+        y2 = self.rx.pos[1]
 
         dx_t = x2 - x1
         dx = x - x1
@@ -105,10 +86,10 @@ class RTILink:
         return (rt, y, (0 <= rt <= 1))
 
     def getYRatio(self, y):
-        x1 = self.tx.pos.x
-        x2 = self.rx.pos.x
-        y1 = self.tx.pos.y
-        y2 = self.rx.pos.y
+        x1 = self.tx.pos[0]
+        x2 = self.rx.pos[0]
+        y1 = self.tx.pos[1]
+        y2 = self.rx.pos[1]
 
         dy_t = y2 - y1
         dy = y - y1
