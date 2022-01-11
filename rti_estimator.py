@@ -53,11 +53,13 @@ class RTIEstimator():
 
         return diffM_X_2 + diffM_Y_2
 
-    def calVoxelAtten(self, linkAtten):
+    def calVoxelAtten(self, linkAtten, normalized = False):
         try:
             bM = np.matmul(self.weightingMT, linkAtten)
             voxelAtten = np.linalg.solve(self.coeffM, bM)
             iM = (RTIGrid.reshapeVoxelArr2Im(voxelAtten, self.getShape()))
+            if normalized:
+                iM = iM/np.amax(iM)
             return iM
         except:
             raise ValueError(f'input must be array of link attenuation \

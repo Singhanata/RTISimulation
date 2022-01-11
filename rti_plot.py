@@ -6,11 +6,13 @@ Created on Fri Oct 22 10:48:27 2021
 """
 import os
 import numpy as np
+from rti_rec import RecordIndex
 import matplotlib.pyplot as plt
 from matplotlib import cm
-from matplotlib.ticker import LinearLocator
+from matplotlib.ticker import LinearLocator, FormatStrFormatter
 
 def plotRTIIm(scheme, iM, **kw):
+    plt.close('all')
     filename = ''
     if 'filename' in kw:
         filename = kw['filename']
@@ -42,19 +44,23 @@ def plotRTIIm(scheme, iM, **kw):
     coordY = np.asarray(sel.coordY)
 
     fig, ax = plt.subplots(1, 1)
+    ax.set_title(title, pad=10)
+    ax.set_ylabel('Y[m]')
+    xlabel = 'X[m]'
+    if 'rmse' in kw: xlabel += '\nRMSE = ' + '{:.3f}'.format(kw['rmse'])
+    if 'mse' in kw: xlabel += '\nMSE = ' + '{:.3f}'.format(kw['mse'])
+    ax.set_xlabel(xlabel)
+
+    
     hm = ax.imshow(iM.T,
                    extent=[coordX[0], coordX[-1], coordY[0], coordY[-1]],
                    cmap=color,
                    origin='lower',
                    interpolation='nearest',
                    vmin=0)
-    ax.set_title(title, pad=10)
-    ax.set_ylabel('[m]')
-    xlabel = '[m]'
-    if 'rmse' in kw: xlabel += '\nRMSE = ' + '{:.3f}'.format(kw['rmse'])
-    if 'mse' in kw: xlabel += '\nMSE = ' + '{:.3f}'.format(kw['mse'])
-    ax.set_xlabel(xlabel)
+
     cb = plt.colorbar(hm)
+    plt.grid()
     if label: cb.set_label(label)
     if s_sensor and len(sensorPosition) > 0:
         plt.scatter(sensorPosition[0],
@@ -62,7 +68,8 @@ def plotRTIIm(scheme, iM, **kw):
                     s=150,
                     c=s_color,
                     marker=s_marker)
-    plt.grid()
+    
+    
     if filename:
         if 'path' in kw:
             fn = os.sep.join([kw['path'], 
@@ -70,6 +77,10 @@ def plotRTIIm(scheme, iM, **kw):
         else:
             fn = (filename + '.svg')
         plt.savefig(fn)    
+
+    if 'anime' in kw:
+        return fig, ax, hm
+
     plt.show()
 
 def plotDerivative(scheme, de, **kw):
@@ -107,15 +118,15 @@ def plotDerivative(scheme, de, **kw):
                        coordY[0:-1] + scheme.vx_length/2)
 
     fig, ax = plt.subplots(1, 1)
-    hm = ax.imshow(de['abs'].T,
+    hm = ax.imshow(de[RecordIndex.DERIVATIVE_ABS].T,
                    extent=[coordX[0], coordX[-1], coordY[0], coordY[-1]],
                    cmap=color,
                    origin='lower',
                    interpolation='nearest',
                    vmin=0)
     # norm = np.log10(de['abs'])
-    U = (de['x']).T  #/de['abs']
-    V = (de['y']).T  #/de['abs']
+    U = (de[RecordIndex.DERIVATIVE_X]).T  #/de['abs']
+    V = (de[RecordIndex.DERIVATIVE_Y]).T  #/de['abs']
     ax.quiver(X, Y, U, V,
               scale = 1.5,
               scale_units = 'xy',
@@ -125,8 +136,8 @@ def plotDerivative(scheme, de, **kw):
               headaxislength = 2.5)
     
     ax.set_title(title, pad=10)
-    ax.set_ylabel('[m]')
-    xlabel = '[m]'
+    ax.set_ylabel('Y[m]')
+    xlabel = 'X[m]'
     if 'caption' in kw: xlabel += '\n' + kw['caption']
     ax.set_xlabel(xlabel)
     
@@ -142,7 +153,7 @@ def plotDerivative(scheme, de, **kw):
     if filename:
         if 'path' in kw:
             fn = os.sep.join([kw['path'], 
-                             (filename + '.svg')])
+                             ('DE_' + filename + '.svg')])
         else:
             fn = (filename + '.svg')
         plt.savefig(fn)    
@@ -262,4 +273,68 @@ def process_boxplot(data, **kw):
             fn = (kw['filename'] + '.svg')
         plt.savefig(fn)     
     plt.show()
- 
+
+def process_plot(data, **kw):
+    fig, ax = plt.subplots(1,1)
+    
+    makeR = ['o', 's', 'v', 'p', 'D', '1', '*', 'H']
+    colorS = ['b', 'g', 'c',
+              'r', 'violet', 'k', 
+              'gray', 'yellow', 'orange']
+    
+    i = 0
+    try:
+        for k, e in data.items():
+            if 'X' in kw: 
+                plt.plot(kw['X'], e, 
+                        c=colorS[i], 
+                        marker = makeR[i],
+                        label = k.name)
+            else:
+                plt.plot(e, 
+                        c=colorS[i], 
+                        marker = makeR[i],
+                        label = k.name)            
+            i += 1
+        ax.legend()
+    except:
+        if 'graphindex' in kw:
+            i = kw['graphindex']
+        if 'X' in kw: 
+            plt.plot(kw['X'], data, 
+                    c=colorS[i], 
+                    marker = makeR[i])
+        else:
+            plt.plot(data, 
+                    c=colorS[i], 
+                    marker = makeR[i])            
+        
+    if 'xscale' in kw:
+        ax.set_xscale(kw['xscale'])
+    if 'yscale' in kw:
+        ax.set_yscale(kw['yscale'])
+    if 'title' in kw:
+        ax.set_title(kw['title'], pad=10)
+    if 'ticklabel' in kw:
+        ax.set_xticklabels(kw['ticklabel'])
+    if 'xlabel' in kw:
+        ax.set_xlabel(kw['xlabel'])
+    if 'ylabel' in kw:
+        ax.set_ylabel(kw['ylabel'])
+    
+    ax.tick_params(axis='x', which='minor', bottom=False)
+    ax.xaxis.set_minor_formatter(FormatStrFormatter(""))
+    ax.set_xticks(kw['X'])
+    if 'tickformat' in kw:
+        ax.set_xticklabels([kw['tickformat'] % x for x in kw['X']])    
+    
+    plt.grid()
+    
+    if 'filename' in kw:
+        if 'path' in kw:
+            fn = os.sep.join([kw['path'], 
+                             (kw['filename'] + '.svg')])
+        else:
+            fn = (kw['filename'] + '.svg')
+        plt.savefig(fn)     
+    plt.show()

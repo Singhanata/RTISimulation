@@ -6,7 +6,7 @@ Created on Thu Jun  3 18:04:35 2021
 """
 
 from rti_scheme import RTIScheme
-from rti_util import Position, Sensor, RTILink
+from rti_util import Sensor, RTILink
 import numpy as np
 
 class SidePositionScheme(RTIScheme):
@@ -63,7 +63,7 @@ class SidePositionScheme(RTIScheme):
 
     def initSensors(self):
         if not (self.n_sensor % 2) == 0:
-            ValueError('In a side-position scheme, the total number of sensors \
+            ValueError('In a side-position scheme, the total number of sensors\
                       must be even')
 
         s_distance = self.rtiGrid.y_span / (self.n_sensor/2)

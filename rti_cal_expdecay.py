@@ -6,7 +6,6 @@ Created on Thu Jun  3 18:44:39 2021
 
 from rti_cal import RTIWeightCalculator
 import numpy as np
-from rti_util import Position
 import math
 
 class ExpDecayRTICalculator(RTIWeightCalculator):
@@ -81,7 +80,7 @@ class ExpDecayRTICalculator(RTIWeightCalculator):
                 for y in y_voxeL:
                     idx_y = int(self.scheme.selection.getYIndex(y,
                                                                     True))
-                    lambda_l = linkS[l].calDistanceFromNode(Position(x,y)) - d
+                    lambda_l = linkS[l].calDistanceFromNode((x,y)) - d
                     omegaR[idx_x][idx_y] = math.exp(-lambda_l/(2*sigma_w))
 
             weightingM.append(omegaR)

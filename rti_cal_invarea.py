@@ -81,7 +81,7 @@ class InvAreaRTICalculator(RTIWeightCalculator):
                     idx_y = int(self.scheme.selection.getYIndex(y,
                                                                     True))
                     if idx_x < omegaR.shape[1] and idx_y < omegaR.shape[0]:
-                        lambda_l = linkS[l].calDistanceFromNode(Position(x,y)) - d
+                        lambda_l = linkS[l].calDistanceFromNode((x,y)) - d
                         if lambda_l < lambda_min:
                             lambda_l = lambda_min
                         area = math.pi * (1/4) * d * math.sqrt(2*d*lambda_l)
@@ -93,5 +93,5 @@ class InvAreaRTICalculator(RTIWeightCalculator):
     
     def getSetting(self):
         se = super().getSetting()
-        se['WeightAlgorithm'] = 'InvA'
+        se['WeightAlgorithm'] = 'IN'
         return se

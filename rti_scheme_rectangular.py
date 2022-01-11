@@ -7,7 +7,7 @@ Created on Thu Jun  3 18:16:25 2021
 
 from rti_scheme import RTIScheme
 from rti_grid import RTIGrid
-from rti_util import Position, Sensor, RTILink
+from rti_util import Sensor, RTILink
 import numpy as np
 
 class RectangularScheme(RTIScheme):
@@ -60,7 +60,9 @@ class RectangularScheme(RTIScheme):
         if area_length < area_width:
             raise ValueError('Width must be shorter than Length')
 
-        self.n_sensor = [n_sensor, ns_x, ns_y]
+        self.n_sensor = n_sensor
+        self._nx = ns_x
+        self._ny = ns_y
         self.rtiGrid = RTIGrid(area_width,
                                area_length,
                                vx_width,
@@ -148,46 +150,47 @@ class RectangularScheme(RTIScheme):
 
 
     def initSensors(self):
-        if not (self.n_sensor[0] % 2) == 0:
+        if not (self.n_sensor % 2) == 0:
             ValueError('In a recctangular scheme, the total number of sensors \
                       must be even')
         # จำนวนเซนเซอร์ของคู่ด้านกว้างและคู่ด้านยาวต้องเท่ากัน แสดงว่าผลรวมของจำนวนดังกล่าวจะต้องเท่ากับครึ่งหนึ่งของจำนวนเซนเซอร์
         # x+y=n/2 and x/y = x_span/y_span แก้ระบบสมการเพื่อหาจำนวนเซนเซอร์บนด้านทั้งสอง
-        if (self.n_sensor[1] <= 1) or (self.n_sensor[2] <= 1):
+        if (self._nx <= 1) or (self._ny <= 1):
             A = np.array([[1,1],[self.area_length, (-1) * self.area_width]])
-            b = np.array([self.n_sensor[0]/2, 0])
+            b = np.array([self.n_sensor/2, 0])
             ns = np.linalg.solve(A,b)
             # Check if the result is valid for furhter calculation
             if not (ns[0].is_integer() & ns[1].is_integer()):
-                raise ValueError('The total number of sensor cannot be arranged equally on each side')
-            self.n_sensor[1] = ns[0]
-            self.n_sensor[2] = ns[1]
+                raise ValueError('The total number of sensor' + 
+                                 ' cannot be arranged equally on each side')
+            self._nx = ns[0]
+            self._ny = ns[1]
         else:
-            if not ((self.n_sensor[1] + self.n_sensor[2])*2 == self.n_sensor[0]):
+            if not ((self._nx + self._ny)*2 == self.n_sensor):
                 raise ValueError('The given sensor count is inconsistant')
 
-        sx_distance = self.area_width / (self.n_sensor[1])
-        sy_distance = self.area_length / (self.n_sensor[2])
+        sx_distance = self.area_width / (self._nx)
+        sy_distance = self.area_length / (self._ny)
 
         leftSideSensorS = []
         s_pos_y = np.arange(0.0, self.area_length, sy_distance)
         for pos_y in s_pos_y:
-            leftSideSensorS.append(Sensor(Position(0.0, pos_y)))
+            leftSideSensorS.append(Sensor((0.0, pos_y)))
 
         topSideSensorS = []
         s_pos_x = np.arange(0.0, self.area_width, sx_distance)
         for pos_x in s_pos_x:
-            topSideSensorS.append(Sensor(Position(pos_x, self.area_length)))
+            topSideSensorS.append(Sensor((pos_x, self.area_length)))
 
         rightSideSensorS = []
         s_pos_y = np.arange(self.area_length, 0.0, (-1) * sy_distance)
         for pos_y in s_pos_y:
-            rightSideSensorS.append(Sensor(Position(self.area_width, pos_y)))
+            rightSideSensorS.append(Sensor((self.area_width, pos_y)))
 
         bottomSideSensorS = []
         s_pos_x = np.arange(self.area_width, 0.0, (-1) * sx_distance)
         for pos_x in s_pos_x:
-            bottomSideSensorS.append(Sensor(Position(pos_x, 0.0)))
+            bottomSideSensorS.append(Sensor((pos_x, 0.0)))
 
         sensorS = tuple([leftSideSensorS, topSideSensorS, rightSideSensorS, bottomSideSensorS])
         return sensorS
@@ -208,7 +211,7 @@ class RectangularScheme(RTIScheme):
             for s2 in rightSideSensorS:
                 linkS.append(RTILink(s1, s2, 0.))
 
-            if (s1.pos.y == 0.0): continue
+            if (s1.pos[1] == 0.0): continue
             for s2 in bottomSideSensorS:
                 linkS.append(RTILink(s1, s2, 0.))
 
@@ -225,20 +228,8 @@ class RectangularScheme(RTIScheme):
         linkS = tuple(linkS)
         return linkS
 
-    def getVoxelScenario(self, x_range, y_range):
-        if x_range[0] > x_range[1] or y_range[0] > y_range[1]:
-            raise ValueError('input must be in form (min, max)')
-
-        vxS = np.zeros(self.selection.getShape())
-
-        xIdX = self.selection.getXIndexArr(x_range)
-        yIdX = self.selection.getYIndexArr(y_range)
-
-        vxS[xIdX[0]:(xIdX[1]+1), yIdX[0]:(yIdX[1]+1)] = 1
-        return vxS
-
     def getSetting(self):
-        se = super().getSetting(self)
+        se = super().getSetting()
         se['scheme'] = 'RE'
         return se
 
@@ -252,14 +243,14 @@ class RectangularScheme(RTIScheme):
             DESCRIPTION.
 
         """
-        xls = [s.pos.x for s in self.sensorS[0]]
-        yls = [s.pos.y for s in self.sensorS[0]]
-        xts = [s.pos.x for s in self.sensorS[1]]
-        yts = [s.pos.y for s in self.sensorS[1]]
-        xrs = [s.pos.x for s in self.sensorS[2]]
-        yrs = [s.pos.y for s in self.sensorS[2]]
-        xbs = [s.pos.x for s in self.sensorS[3]]
-        ybs = [s.pos.y for s in self.sensorS[3]]
+        xls = [s.pos[0] for s in self.sensorS[0]]
+        yls = [s.pos[1] for s in self.sensorS[0]]
+        xts = [s.pos[0] for s in self.sensorS[1]]
+        yts = [s.pos[1] for s in self.sensorS[1]]
+        xrs = [s.pos[0] for s in self.sensorS[2]]
+        yrs = [s.pos[1] for s in self.sensorS[2]]
+        xbs = [s.pos[0] for s in self.sensorS[3]]
+        ybs = [s.pos[1] for s in self.sensorS[3]]
 
         xs = xls + xts + xrs + xbs
         ys = yls + yts + yrs + ybs

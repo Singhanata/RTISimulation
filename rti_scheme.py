@@ -163,7 +163,7 @@ class RTIScheme():
     def initLinks(self):
         raise NotImplementedError
 
-    def getVoxelScenario(self, x_range, y_range):
+    def getVoxelScenario(self, x_range, y_range, **kw):
         if x_range[0] > x_range[1] or y_range[0] > y_range[1]:
             raise ValueError('input must be in form (min, max)')
 
@@ -171,7 +171,18 @@ class RTIScheme():
 
         xIdX = self.selection.getXIndexArr(x_range)
         yIdX = self.selection.getYIndexArr(y_range)
-
+        
+        if 'object_form' in kw:
+            if kw['object_form'] == 'cylindical':
+                for i in range(xIdX[0],(xIdX[1]+1)):
+                    for j in range(yIdX[0],(yIdX[1]+1)):
+                        if (Position.
+                            calDistance((self.coordX[i],self.coordY[j]), 
+                                                ((x_range[1]+x_range[0])/2,
+                                                 (y_range[1]+y_range[0])/2)) 
+                            < (x_range[1]-x_range[0])/2):
+                            vxS[i][j] = 1
+            return vxS           
         vxS[xIdX[0]:(xIdX[1]+1), yIdX[0]:(yIdX[1]+1)] = 1
         return vxS
 
@@ -182,6 +193,7 @@ class RTIScheme():
         setting['Sensor Distance'] = self.area_width
         setting['Sensor Count'] = int(self.n_sensor)
         setting['Voxel Width'] = self.vx_width
+        setting['Voxel Length'] = self.vx_length
         return setting
     
     def describe(self):

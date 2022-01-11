@@ -28,21 +28,21 @@ class RTISimulation():
     def getTitle(self, delimiter=',', short = False):
         if short:
             setting = self.estimator.weightCalculator.getSetting()
-            title_w = f'W{setting["Width"]}' + delimiter
-            title_l = f'L{setting["Length"]}' + delimiter
-            title_vx = f'VX{setting["Voxel Width"]}' + delimiter
-            title_SC = f'SC{setting["Sensor Count"]}' 
+            title_w = f'A{setting["Width"]}' + delimiter
+            title_l = f'{setting["Length"]}' + delimiter
+            title_vx = f'V{setting["Voxel Width"]}{setting["Voxel Length"]}' + delimiter
+            title_SC = f'N{setting["Sensor Count"]}' 
             title_SR = '-'
-            title_sch = setting['scheme'] + '-'
+            title_sch = setting['scheme']
             title_cal = setting['WeightAlgorithm']
         else:
             setting = self.estimator.weightCalculator.getSetting()
-            title_w = f'W@{setting["Width"]}' + delimiter
-            title_l = f'L@{setting["Length"]}' + delimiter
-            title_vx = f'VX@{setting["Voxel Width"]}' + delimiter
-            title_SC = f'SC@{setting["Sensor Count"]}' + '-'
-            title_SR = f'SR@{setting["Length"]/(setting["Sensor Count"]/2)}' + delimiter
-            title_sch = setting['scheme'] + '-'
+            title_w = f'A@({setting["Width"]}' + delimiter
+            title_l = f'{setting["Length"]})' + delimiter
+            title_vx = f'V@({setting["Voxel Width"]},{setting["Voxel Length"]})' + delimiter
+            title_SC = f'N@{setting["Sensor Count"]}'
+            title_SR = '-'
+            title_sch = setting['scheme']
             title_cal = setting['WeightAlgorithm']
 
         return (title_w + title_l +
@@ -59,8 +59,8 @@ class RTISimulation():
         if 'sensing_area_dimension' in kw:
             wa_dim = kw['sensing_area_dimension']
         vx_dim = (0.5, 0.5)
-        if 'voxel_dim' in kw:
-            vx_dim = kw['voxel_dim']
+        if 'voxel_dimension' in kw:
+            vx_dim = kw['voxel_dimension']
         n_s = 20
         if 'n_sensor' in kw:
             n_s = kw['n_sensor']
@@ -92,12 +92,10 @@ class RTISimulation():
         else:
             ValueError('Scheme Type not exist')
 
-        if weightAlgorithm == 'LS':
-            if 'cal_mode' in kw:
-                self.calculator = LineWeightingRTICalculator(self.scheme,
-                                                             kw['cal_mode'])
-            else:
-                self.calculator = LineWeightingRTICalculator(self.scheme)
+        if weightAlgorithm == 'LS1':
+            self.calculator = LineWeightingRTICalculator(self.scheme)
+        if weightAlgorithm == 'LS2':
+            self.calculator = LineWeightingRTICalculator(self.scheme, 2)
         elif weightAlgorithm == 'EL':
             if 'lambda_coeff' in kw:
                 self.calculator = EllipseRTICalculator(self.scheme,
@@ -133,29 +131,33 @@ class RTISimulation():
         try:
             os.mkdir(fdn)
         except:
-            print('Folder ' + fdn + ' is already exist')
+            pass
+            # print('Folder ' + fdn + ' is already exist')
         fn_fig = os.sep.join([fdn, 'fig']) 
         try:
             os.mkdir(fn_fig)
         except:
-            print('Folder ' + fn_fig + ' is already exist')
+            pass
+            # print('Folder ' + fn_fig + ' is already exist')
         fn_rec = os.sep.join([fdn, 'rec'])
         try:
             os.mkdir(fn_rec)
         except:
-            print('Folder ' + fn_rec + ' is already exist')
+            pass
+            # print('Folder ' + fn_rec + ' is already exist')
         fn_con = os.sep.join([fdn, 'conc'])
         try:
             os.mkdir(fn_con)
         except:
-            print('Folder ' + fn_con + ' is already exist')
+            pass
+            # print('Folder ' + fn_con + ' is already exist')
         
         save_path = {}
         save_path['gfx'] = fn_fig
         save_path['rec'] = fn_rec
         save_path['conc'] = fn_con
-        
-        return  kw, save_path
+        print('sim create.. ' + self.getTitle())
+        return  save_path
 
     def coorD(self, **kw):
         if 'axis' in kw:

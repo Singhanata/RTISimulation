@@ -51,9 +51,15 @@ class Selection():
                                  in the ascending order')
         except:
             raise TypeError('input must be in form (min,max)')
-
-        min_idx = self.getXIndex(min_x, True)
-        max_idx = self.getXIndex(max_x, False)
+        
+        if min_x < self.coordX[0]:
+            min_idx = 0
+        else:
+            min_idx = self.getXIndex(min_x, True)
+        if max_x > self.coordX[-1]:
+            max_idx = len(self.coordX) - 1
+        else:
+            max_idx = self.getXIndex(max_x, False)
 
         return (min_idx, max_idx)
 
@@ -67,8 +73,14 @@ class Selection():
         except:
             raise TypeError('input must be in form (min,max)')
 
-        min_idx = self.getYIndex(min_y, True)
-        max_idx = self.getYIndex(max_y, False)
+        if min_y < self.coordY[0]:
+            min_idx = 0
+        else:
+            min_idx = self.getXIndex(min_y, True)
+        if max_y > self.coordY[-1]:
+            max_idx = len(self.coordY) - 1
+        else:
+            max_idx = self.getXIndex(max_y, False)
 
         return (min_idx, max_idx)
 

@@ -10,7 +10,7 @@ import numpy as np
 import math
 
 class LineWeightingRTICalculator(RTIWeightCalculator):
-    def __init__(self, scheme, mode = 0):
+    def __init__(self, scheme, mode = 1):
         """
 
 
@@ -88,7 +88,7 @@ class LineWeightingRTICalculator(RTIWeightCalculator):
                 y = intersectionS[i][1]
                 d_rt = intersectionS[i+1][2] - intersectionS[i][2]
                 w = d_rt * linkS[l].distance
-                if self.mode:
+                if self.mode > 1:
                     w = w/math.sqrt(linkS[l].distance)
                 try:
                     idx_x = int(self.scheme.selection.getXIndex(x, (diff_x >= 0)))
@@ -110,5 +110,5 @@ class LineWeightingRTICalculator(RTIWeightCalculator):
     
     def getSetting(self):
         se = super().getSetting()
-        se['WeightAlgorithm'] = 'LS'
+        se['WeightAlgorithm'] = 'LS'+str(self.mode)
         return se

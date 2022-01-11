@@ -1,4 +1,3 @@
-
 import numpy as np
 import matplotlib.pyplot as plt
 import os
@@ -57,23 +56,11 @@ class RecordIndex(Enum):
     
 def process_boxplot(data, **kw):
     fig, ax = plt.subplots(1,1)
-    if ('mean' in kw) and kw['mean']:
-        for k, i in enumerate(data):
-            x = []
-            m = []
-            x.append(k)
-            m.append(i.mean())
-        sc = plt.scatter(x,
-                         m,                    
-                         s = 750,
-                         marker='_',
-                         color = 'grey',
-                         zorder=2)
+
     bp = plt.boxplot(data, 
                      patch_artist = True,
                      notch = True,
                      zorder=1)
-    sc.set_label('Mean')
     
     ax.set_xticklabels(kw['ticklabel'])
     ax.set_xlabel(kw['xlabel'])
@@ -123,16 +110,16 @@ def process_boxplot(data, **kw):
         plt.savefig(fn)     
     plt.show()
     
-# data_1 = np.random.normal(100, 10, 200)
-# data_2 = np.random.normal(90, 20, 200)
-# data_3 = np.random.normal(80, 30, 200)
-# data_4 = np.random.normal(70, 40, 200)
-# data = [data_1, data_2, data_3, data_4]
-# tickLabel = ['1e0','1e1','1e2','1e3'] 
+data_1 = np.random.normal(100, 10, 200)
+data_2 = np.random.normal(90, 20, 200)
+data_3 = np.random.normal(80, 30, 200)
+data_4 = np.random.normal(70, 40, 200)
+data = [data_1, data_2, data_3, data_4]
+tickLabel = ['1e0','1e1','1e2','1e3'] 
 
-# process_boxplot(data, 
-#                 ticklabel = tickLabel,
-#                 xlabel = 'Alpha',
-#                 ylabel = 'RMSE')
+process_boxplot(data, 
+                ticklabel = tickLabel,
+                xlabel = 'Alpha',
+                ylabel = 'RMSE')
 
 
