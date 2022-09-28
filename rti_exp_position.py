@@ -48,6 +48,7 @@ def process_position(sim):
         #output setting
         'gfx_enabled' : True,
         'record_enabled':False,
+        'der_plot_enabled':False,
         'resultset':[
             RecordIndex.RMSE_ALL,
             RecordIndex.OBJ_RATIO,
