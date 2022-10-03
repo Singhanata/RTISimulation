@@ -226,6 +226,9 @@ class RTIScheme():
     
     def getSensorPosition(self):
         raise NotImplementedError
+    
+    def getLinkDimension(self):
+        raise NotImplementedError
 
     def show(self, fn = 'scheme.svg', **kw):
         sc = 'black'

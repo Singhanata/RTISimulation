@@ -14,10 +14,11 @@ from rti_cal_ellipse import EllipseRTICalculator
 from rti_cal_expdecay import ExpDecayRTICalculator
 from rti_cal_invarea import InvAreaRTICalculator
 
+
 class RTISimulation():
     def __init__(self):
         tStr = datetime.now().strftime('-%d%m%Y-%H%M%S')
-        res_dir = os.sep.join(['results',('results'+tStr)])
+        res_dir = os.sep.join(['results', ('results'+tStr)])
         os.getcwd()
         try:
             os.mkdir(res_dir)
@@ -25,13 +26,13 @@ class RTISimulation():
             print('Folder ' + res_dir + ' is already exist')
         self.res_dir = res_dir
 
-    def getTitle(self, delimiter=',', short = False):
+    def getTitle(self, delimiter=',', short=False):
         if short:
             setting = self.estimator.weightCalculator.getSetting()
             title_w = f'A{setting["Width"]}' + delimiter
             title_l = f'{setting["Length"]}' + delimiter
             title_vx = f'V{setting["Voxel Width"]}{setting["Voxel Length"]}' + delimiter
-            title_SC = f'N{setting["Sensor Count"]}' 
+            title_SC = f'N{setting["Sensor Count"]}'
             title_SR = '-'
             title_sch = setting['scheme']
             title_cal = setting['WeightAlgorithm']
@@ -52,7 +53,7 @@ class RTISimulation():
         ref_pos = (0., 0.)
         if 'reference_position' in kw:
             ref_pos = kw['reference_position']
-        a_dim = (10., 10.) 
+        a_dim = (10., 10.)
         if 'area_dimension' in kw:
             a_dim = kw['area_dimension']
         wa_dim = a_dim
@@ -82,13 +83,13 @@ class RTISimulation():
                                              n_s)         # n_sensor
         elif schemeType == 'RE':
             self.scheme = RectangularScheme(ref_pos,
-                                             a_dim[0],    # area_width
-                                             a_dim[1],    # area_length
-                                             vx_dim[0],   # vx_width
-                                             vx_dim[1],   # vx_length
-                                             wa_dim[0],   # wa_width
-                                             wa_dim[1],   # wa_length
-                                             n_s)         # n_sensor
+                                            a_dim[0],    # area_width
+                                            a_dim[1],    # area_length
+                                            vx_dim[0],   # vx_width
+                                            vx_dim[1],   # vx_length
+                                            wa_dim[0],   # wa_width
+                                            wa_dim[1],   # wa_length
+                                            n_s)         # n_sensor
         else:
             ValueError('Scheme Type not exist')
 
@@ -127,13 +128,13 @@ class RTISimulation():
         title = ''
         if 'title' in kw:
             title += kw['title'] + '-'
-        fdn =  os.sep.join([fdn, (title + self.getTitle('', True))]) 
+        fdn = os.sep.join([fdn, (title + self.getTitle('', True))])
         try:
             os.mkdir(fdn)
         except:
             pass
             # print('Folder ' + fdn + ' is already exist')
-        fn_fig = os.sep.join([fdn, 'fig']) 
+        fn_fig = os.sep.join([fdn, 'fig'])
         try:
             os.mkdir(fn_fig)
         except:
@@ -151,13 +152,13 @@ class RTISimulation():
         except:
             pass
             # print('Folder ' + fn_con + ' is already exist')
-        
+
         save_path = {}
         save_path['gfx'] = fn_fig
         save_path['rec'] = fn_rec
         save_path['conc'] = fn_con
         print('sim create.. ' + self.getTitle())
-        return  save_path
+        return save_path
 
     def coorD(self, **kw):
         if 'axis' in kw:
@@ -168,6 +169,7 @@ class RTISimulation():
                 return self.scheme.coordY
             else:
                 raise ValueError('axis not defined')
-        return (self.scheme.coordX, self.scheme.coordY) 
+        return (self.scheme.coordX, self.scheme.coordY)
     
-        
+    def getLinkDimension(self):
+        return self.scheme.getLinkDimension()
