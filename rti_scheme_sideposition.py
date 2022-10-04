@@ -115,7 +115,7 @@ class SidePositionScheme(RTIScheme):
 
         return [xs,ys]
     
-    def getLinkDimension(self):
+    def getLogDimension(self):
         return [int(self.n_sensor), int(self.n_sensor/2)]
     
     def getSetting(self):
