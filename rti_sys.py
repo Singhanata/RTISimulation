@@ -64,90 +64,93 @@ class RTIProcess():
             pass
 
     def receive_callback(self, msg, rtiConn):
-        if (msg[0] == RTIConnection.START_SYM):
-            print(msg)
-            if (msg[1] != RTIConnection.TYPE_SYM):
-                raise Exception("Invalid Format: Missing TYPE Character")
-            b2 = (msg[4] == RTIConnection.TYPE_CONTENT_SYM)
-            if b2:
-                sender = msg[18:20].decode("utf-8")
-                sender_idx = int(sender)
-                print(sender)
-                if (msg[37] != RTIConnection.MASK_SYM):
-                    raise Exception("Invalid Format: Missing MASK Character")
-                else:
-                    # read RSSI values\
-                    i = 38
-                    while((i < len(msg)) and (msg[i] != RTIConnection.MASK_SYM)):
-                        if msg[i] != RTIConnection.START_SYM:
-                            if msg[i] != RTIConnection.SPACE_SYM:                                
-                                raise Exception(
-                                    "Invalid Format: Missing START Character")
-                            else:
-                                i += 1
-                        i += 2
-                        n_idx = int(msg[i:(i+2)]) - 1
-                        print(n_idx)
-                        i += 2
-                        if msg[i] != RTIConnection.SEPARATE_SYM:
-                            raise Exception(
-                                "Invalid Format: Missing SEPARATE Character")
-                        i += 1
-                        rssi_vl = 0
-                        if msg[i] == 0x2D:
-                            rssi_vl = int(msg[i:(i+3)])
-                            i += 3
-                        else:
-                            rssi_vl = int(msg[i:(i+2)])
-                            i += 2
-                        print(self.recordCount[(sender_idx-1)])
-                        self.histogram_log_1[sender_idx][n_idx][self.recordCount[(sender_idx-1)]] = rssi_vl
-                        print(self.histogram_log_1[sender_idx][n_idx][self.recordCount[sender_idx-1]])
-                        if msg[i] != RTIConnection.STOP_SYM:
-                            raise Exception(
-                                "Invalid Format: Missing STOP Character")
-                        i += 1
+        print(msg)
+        for i in msg:
+            print(i)
+        # if (msg[0] == RTIConnection.START_SYM):
+        #     print(msg)
+        #     if (msg[1] != RTIConnection.TYPE_SYM):
+        #         raise Exception("Invalid Format: Missing TYPE Character")
+        #     b2 = (msg[4] == RTIConnection.TYPE_CONTENT_SYM)
+        #     if b2:
+        #         sender = msg[18:20].decode("utf-8")
+        #         sender_idx = int(sender)
+        #         print(sender)
+        #         if (msg[37] != RTIConnection.MASK_SYM):
+        #             raise Exception("Invalid Format: Missing MASK Character")
+        #         else:
+        #             # read RSSI values\
+        #             i = 38
+        #             while((i < len(msg)) and (msg[i] != RTIConnection.MASK_SYM)):
+        #                 if msg[i] != RTIConnection.START_SYM:
+        #                     if msg[i] != RTIConnection.SPACE_SYM:                                
+        #                         raise Exception(
+        #                             "Invalid Format: Missing START Character")
+        #                     else:
+        #                         i += 1
+        #                 i += 2
+        #                 n_idx = int(msg[i:(i+2)]) - 1
+        #                 print(n_idx)
+        #                 i += 2
+        #                 if msg[i] != RTIConnection.SEPARATE_SYM:
+        #                     raise Exception(
+        #                         "Invalid Format: Missing SEPARATE Character")
+        #                 i += 1
+        #                 rssi_vl = 0
+        #                 if msg[i] == 0x2D:
+        #                     rssi_vl = int(msg[i:(i+3)])
+        #                     i += 3
+        #                 else:
+        #                     rssi_vl = int(msg[i:(i+2)])
+        #                     i += 2
+        #                 print(self.recordCount[(sender_idx-1)])
+        #                 self.histogram_log_1[sender_idx][n_idx][self.recordCount[(sender_idx-1)]] = rssi_vl
+        #                 print(self.histogram_log_1[sender_idx][n_idx][self.recordCount[sender_idx-1]])
+        #                 if msg[i] != RTIConnection.STOP_SYM:
+        #                     raise Exception(
+        #                         "Invalid Format: Missing STOP Character")
+        #                 i += 1
 
-                    i += 1
-                    while(i < (len(msg)-2)):
-                        if msg[i] != RTIConnection.START_SYM:
-                            if msg[i] !=  RTIConnection.SPACE_SYM:
-                                raise Exception(
-                                    "Invalid Format: Missing START Character")
-                            else:
-                                i += 1
-                        i += 2
-                        n_idx = int(msg[i:(i+2)]) - 1
-                        print(n_idx)
-                        i += 2
-                        if msg[i] != RTIConnection.SEPARATE_SYM:
-                            raise Exception(
-                                "Invalid Format: Missing SEPARATE Character")
-                        i += 1
-                        ir_vl = 0
-                        if msg[i] == 0x2D:
-                            ir_vl = int(msg[i:(i+5)])
-                            i += 5
-                        else:
-                            ir_vl = int(msg[i:(i+4)])
-                            i += 4
-                        self.histogram_log_2[sender_idx][n_idx][self.recordCount[sender_idx-1]] = ir_vl
-                        print(self.histogram_log_2[sender_idx][n_idx][self.recordCount[sender_idx-1]])
-                        if msg[i] != RTIConnection.STOP_SYM:
-                            raise Exception(
-                                "Invalid Format: Missing STOP Character")
-                        i += 1
-                    self.recordCount[sender_idx-1] += 1
-                    print(self.recordCount[sender_idx-1])
-                    if self.recordCount[sender_idx-1] >= self.RECORD_SIZE:
-                        self.timeStr = datetime.now().strftime('_%d%m%Y_%H%M%S')
-                        filename = 'RSSI N' + str(sender_idx) + self.timeStr + '.csv'
-                        filepath = os.sep.join([self.savepath['rec'], filename])
-                        np.savetxt(filepath, self.histogram_log_1[sender_idx], delimiter = ',', fmt = '%s')
-                        filename = 'IR N' + str(sender_idx) + self.timeStr + '.csv'
-                        filepath = os.sep.join([self.savepath['rec'], filename])
-                        np.savetxt(filepath, self.histogram_log_2[sender_idx], delimiter = ',', fmt = '%s')
-                        self.recordCount[sender_idx-1] = 0
+        #             i += 1
+        #             while(i < (len(msg)-2)):
+        #                 if msg[i] != RTIConnection.START_SYM:
+        #                     if msg[i] !=  RTIConnection.SPACE_SYM:
+        #                         raise Exception(
+        #                             "Invalid Format: Missing START Character")
+        #                     else:
+        #                         i += 1
+        #                 i += 2
+        #                 n_idx = int(msg[i:(i+2)]) - 1
+        #                 print(n_idx)
+        #                 i += 2
+        #                 if msg[i] != RTIConnection.SEPARATE_SYM:
+        #                     raise Exception(
+        #                         "Invalid Format: Missing SEPARATE Character")
+        #                 i += 1
+        #                 ir_vl = 0
+        #                 if msg[i] == 0x2D:
+        #                     ir_vl = int(msg[i:(i+5)])
+        #                     i += 5
+        #                 else:
+        #                     ir_vl = int(msg[i:(i+4)])
+        #                     i += 4
+        #                 self.histogram_log_2[sender_idx][n_idx][self.recordCount[sender_idx-1]] = ir_vl
+        #                 print(self.histogram_log_2[sender_idx][n_idx][self.recordCount[sender_idx-1]])
+        #                 if msg[i] != RTIConnection.STOP_SYM:
+        #                     raise Exception(
+        #                         "Invalid Format: Missing STOP Character")
+        #                 i += 1
+        #             self.recordCount[sender_idx-1] += 1
+        #             print(self.recordCount[sender_idx-1])
+        #             if self.recordCount[sender_idx-1] >= self.RECORD_SIZE:
+        #                 self.timeStr = datetime.now().strftime('_%d%m%Y_%H%M%S')
+        #                 filename = 'RSSI N' + str(sender_idx) + self.timeStr + '.csv'
+        #                 filepath = os.sep.join([self.savepath['rec'], filename])
+        #                 np.savetxt(filepath, self.histogram_log_1[sender_idx], delimiter = ',', fmt = '%s')
+        #                 filename = 'IR N' + str(sender_idx) + self.timeStr + '.csv'
+        #                 filepath = os.sep.join([self.savepath['rec'], filename])
+        #                 np.savetxt(filepath, self.histogram_log_2[sender_idx], delimiter = ',', fmt = '%s')
+        #                 self.recordCount[sender_idx-1] = 0
                         
                     
 
