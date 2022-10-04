@@ -18,10 +18,10 @@ class RTIProcess():
     def __init__(self, sim):
         setting = {
             # scenario setting
-            'title': 'RTI Experiment',
-            'area_dimension': (10., 10.),
+            'title': 'RTIExperiment',
+            'area_dimension': (6., 6.),
             'voxel_dimension': (0.20, 0.20),
-            'sensing_area_position': (9., 9.),
+            'sensing_area_position': (6., 6.),
             'n_sensor':2,
             'alpha': 1,
             'schemeType': 'SW',
@@ -50,9 +50,8 @@ class RTIProcess():
 
         self.savepath = sim.process_routine(**setting)
         # ev = RTIEvaluation(**setting)
-        self.sUpdate = False
-        self.dim = sim.getLinkDimension()
-        self.log = np.zeros(self.dim)
+        self.dim = sim.getLogDimension()
+        self.input = np.zeros(self.dim)
         self.histogram_log_1 = {}
         self.histogram_log_2 = {}
         for i in range(self.dim[0]):
@@ -64,6 +63,7 @@ class RTIProcess():
 
     def receive_callback(self, msg, rtiConn):
         if (msg[0] == RTIConnection.START_SYM):
+            print(msg)
             if (msg[1] != RTIConnection.TYPE_SYM):
                 raise Exception("Invalid Format: Missing TYPE Character")
             b2 = (msg[4] == RTIConnection.TYPE_CONTENT_SYM)
@@ -106,8 +106,11 @@ class RTIProcess():
                     i += 1
                     while(i < (len(msg)-2)):
                         if msg[i] != RTIConnection.START_SYM:
-                            raise Exception(
-                                "Invalid Format: Missing START Character")
+                            if msg[i] !=  RTIConnection.SPACE_SYM:
+                                raise Exception(
+                                    "Invalid Format: Missing START Character")
+                            else:
+                                i += 1
                         i += 2
                         n_idx = int(msg[i:(i+2)]) - 1
                         print(n_idx)
@@ -174,6 +177,7 @@ class RTIConnection():
     NEXT_SYM = 0x58
     NODE_SYM = 0x4E
     MASK_SYM = 0x7E
+    SPACE_SYM = 0x20
 
     TYPE_BEACON_SYM = 0x30
     TYPE_CONTENT_SYM = 0x31
