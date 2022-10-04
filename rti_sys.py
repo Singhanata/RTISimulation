@@ -64,9 +64,36 @@ class RTIProcess():
             pass
 
     def receive_callback(self, msg, rtiConn):
-        print(msg)
-        for i in msg:
-            print(i)
+        if msg[0] == 0x01:
+            # msgID = int.from_bytes(msg[1])
+            # sNID = msg[2]
+            sDID = msg[3]
+            l = int.from_bytes(msg[8:12], "little", signed=True)
+            mask = int.from_bytes(msg[12:16], "little", signed=True)
+            if mask == 255:
+                n = (l/2-1)
+                ptr = 16
+                for i in range(n):
+                    rssi_vl = int.from_bytes(msg[ptr:(ptr+4)], "little", signed=True)
+                    ptr+=4
+                    self.histogram_log_1[sDID][i][self.recordCount[(sDID-1)]] = rssi_vl
+                mask = int.from_bytes(msg[ptr:(ptr+4)], "little", signed=True)
+                ptr+=4
+                if mask == 255:
+                    for i in range(n):
+                        ir_vl = int.from_bytes(msg[ptr:(ptr+4)], "little", signed=True)
+                        ptr+=4
+                        self.histogram_log_1[sDID][i][self.recordCount[(sDID-1)]] = ir_vl                    
+                    mask = int.from_bytes(msg[ptr:(ptr+4)], "little", signed=True)
+                    ptr+=4
+                    if mask != 255:
+                        print('END MASK not detected')                        
+                else:
+                    print('IR MASK not detected')
+            else:
+                print('RSSI MASK not detected')
+        else:
+            print(msg)
         # if (msg[0] == RTIConnection.START_SYM):
         #     print(msg)
         #     if (msg[1] != RTIConnection.TYPE_SYM):
@@ -171,7 +198,7 @@ class RTIConnection():
     THRESHOLD_LOG_LORA_RECEIVE = 10000
     MODESTR = 'CONSISTANT_SERIAL'
 
-    START_SYM = 0x3C
+    START_SYM = 0x01
     STOP_SYM = 0x3E
     SEPARATE_SYM = 0x3A
 
