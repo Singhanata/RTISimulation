@@ -14,7 +14,7 @@ from datetime import datetime
 
 
 class RTIProcess():
-    RECORD_SIZE = 100
+    RECORD_SIZE = 10
     
     def __init__(self, sim):
         setting = {
@@ -68,29 +68,40 @@ class RTIProcess():
             # msgID = int.from_bytes(msg[1])
             # sNID = msg[2]
             sDID = msg[3]
-            print(sDID)
+            print('NODE ID:' + str(sDID))
             l = int.from_bytes(msg[8:12], "little", signed=True)
             mask = int.from_bytes(msg[12:16], "little", signed=True)
             if mask == 255:
-                n = (l/2-1)
+                n = int(l/2-1)
                 ptr = 16
                 for i in range(n):
                     rssi_vl = int.from_bytes(msg[ptr:(ptr+4)], "little", signed=True)
                     ptr+=4
-                    print(rssi_vl)
+                    print("RSSI: " +  str(rssi_vl))
                     self.histogram_log_1[sDID][i][self.recordCount[(sDID-1)]] = rssi_vl
                 mask = int.from_bytes(msg[ptr:(ptr+4)], "little", signed=True)
                 ptr+=4
                 if mask == 255:
                     for i in range(n):
                         ir_vl = int.from_bytes(msg[ptr:(ptr+4)], "little", signed=True)
-                        print(ir_vl)
+                        print("IR:" + str(ir_vl))
                         ptr+=4
-                        self.histogram_log_1[sDID][i][self.recordCount[(sDID-1)]] = ir_vl                    
+                        self.histogram_log_2[sDID][i][self.recordCount[(sDID-1)]] = ir_vl                    
                     mask = int.from_bytes(msg[ptr:(ptr+4)], "little", signed=True)
                     ptr+=4
+                    self.recordCount[(sDID-1)] += 1
                     if mask != 255:
-                        print('END MASK not detected')                        
+                        print('END MASK not detected')
+                    else:
+                        if self.recordCount[sDID-1] >= self.RECORD_SIZE:
+                            self.timeStr = datetime.now().strftime('_%d%m%Y_%H%M%S')
+                            filename = 'RSSI N' + str(sDID) + self.timeStr + '.csv'
+                            filepath = os.sep.join([self.savepath['rec'], filename])
+                            np.savetxt(filepath, self.histogram_log_1[sDID], delimiter = ',', fmt = '%s')
+                            filename = 'IR N' + str(sDID) + self.timeStr + '.csv'
+                            filepath = os.sep.join([self.savepath['rec'], filename])
+                            np.savetxt(filepath, self.histogram_log_2[sDID], delimiter = ',', fmt = '%s')
+                            self.recordCount[sDID-1] = 0
                 else:
                     print('IR MASK not detected')
             else:
