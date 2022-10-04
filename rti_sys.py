@@ -68,6 +68,7 @@ class RTIProcess():
             # msgID = int.from_bytes(msg[1])
             # sNID = msg[2]
             sDID = msg[3]
+            print(sDID)
             l = int.from_bytes(msg[8:12], "little", signed=True)
             mask = int.from_bytes(msg[12:16], "little", signed=True)
             if mask == 255:
@@ -76,12 +77,14 @@ class RTIProcess():
                 for i in range(n):
                     rssi_vl = int.from_bytes(msg[ptr:(ptr+4)], "little", signed=True)
                     ptr+=4
+                    print(rssi_vl)
                     self.histogram_log_1[sDID][i][self.recordCount[(sDID-1)]] = rssi_vl
                 mask = int.from_bytes(msg[ptr:(ptr+4)], "little", signed=True)
                 ptr+=4
                 if mask == 255:
                     for i in range(n):
                         ir_vl = int.from_bytes(msg[ptr:(ptr+4)], "little", signed=True)
+                        print(ir_vl)
                         ptr+=4
                         self.histogram_log_1[sDID][i][self.recordCount[(sDID-1)]] = ir_vl                    
                     mask = int.from_bytes(msg[ptr:(ptr+4)], "little", signed=True)
