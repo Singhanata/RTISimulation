@@ -7,6 +7,7 @@ import serial
 import numpy as np
 import threading
 import os
+import warning
 from datetime import datetime
 
 # from rti_eval import RTIEvaluation, RecordIndex
@@ -58,6 +59,7 @@ class RTIProcess():
             self.histogram_log_1[i+1] = np.zeros([self.dim[1], self.RECORD_SIZE])
             self.histogram_log_2[i+1] = np.zeros([self.dim[1], self.RECORD_SIZE])
         self.recordCount = np.zeros(self.dim[0], dtype=int)
+        self.sUpdate = False
         while(self.sUpdate):
             pass
 
@@ -78,8 +80,11 @@ class RTIProcess():
                     i = 38
                     while((i < len(msg)) and (msg[i] != RTIConnection.MASK_SYM)):
                         if msg[i] != RTIConnection.START_SYM:
-                            raise Exception(
-                                "Invalid Format: Missing START Character")
+                            if msg[i] != RTIConnection.SPACE_SYM:                                
+                                raise Exception(
+                                    "Invalid Format: Missing START Character")
+                            else:
+                                i += 1
                         i += 2
                         n_idx = int(msg[i:(i+2)]) - 1
                         print(n_idx)
