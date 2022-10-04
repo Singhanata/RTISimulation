@@ -7,7 +7,7 @@ import serial
 import numpy as np
 import threading
 import os
-import warning
+# import warning
 from datetime import datetime
 
 # from rti_eval import RTIEvaluation, RecordIndex
@@ -152,9 +152,6 @@ class RTIProcess():
         #                 np.savetxt(filepath, self.histogram_log_2[sender_idx], delimiter = ',', fmt = '%s')
         #                 self.recordCount[sender_idx-1] = 0
                         
-                    
-
-
 class ReceiveThread(threading.Thread):
     def __init__(self, threadID, name, counter, rtiConn):
         threading.Thread.__init__(self)
