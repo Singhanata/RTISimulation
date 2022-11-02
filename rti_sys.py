@@ -21,7 +21,7 @@ class RTIProcess():
             'area_dimension': (6., 6.),
             'voxel_dimension': (0.20, 0.20),
             'sensing_area_position': (6., 6.),
-            'n_sensor':2,
+            'n_sensor':10,
             'alpha': 1,
             'schemeType': 'SW',
             'weightalgorithm': 'EX',
