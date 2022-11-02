@@ -171,5 +171,5 @@ class RTISimulation():
                 raise ValueError('axis not defined')
         return (self.scheme.coordX, self.scheme.coordY)
     
-    def getLogDimension(self):
-        return self.scheme.getLogDimension()
+    def getInputDimension(self):
+        return self.scheme.getInputDimension()

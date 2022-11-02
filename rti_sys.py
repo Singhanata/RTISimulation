@@ -6,10 +6,8 @@ Created on Fri Sep 30 10:51:00 2022
 import serial
 import numpy as np
 import threading
-import os
-# import warning
-from datetime import datetime
-
+from rti_frame import FrameIndex,FrameSymbol
+from rti_input import RTIInput
 # from rti_eval import RTIEvaluation, RecordIndex
 
 
@@ -50,64 +48,129 @@ class RTIProcess():
         }
 
         self.savepath = sim.process_routine(**setting)
-        # ev = RTIEvaluation(**setting)
-        self.dim = sim.getLogDimension()
-        self.input = np.zeros(self.dim)
-        self.histogram_log_1 = {}
-        self.histogram_log_2 = {}
-        for i in range(self.dim[0]):
-            self.histogram_log_1[i+1] = np.zeros([self.dim[1], self.RECORD_SIZE])
-            self.histogram_log_2[i+1] = np.zeros([self.dim[1], self.RECORD_SIZE])
-        self.recordCount = np.zeros(self.dim[0], dtype=int)
+        dim = sim.getInputDimension()
+        self.input = RTIInput(self.RECORD_SIZE, dim, self.savepath, 'rssi', 'ir')
+        self.ready = False
         self.sUpdate = False
-        while(self.sUpdate):
-            pass
-
-    def receive_callback(self, msg, rtiConn):
-        if msg[0] == 0x01:
-            # msgID = int.from_bytes(msg[1])
-            # sNID = msg[2]
-            sDID = msg[3]
-            print('NODE ID:' + str(sDID))
-            l = int.from_bytes(msg[8:12], "little", signed=True)
-            mask = int.from_bytes(msg[12:16], "little", signed=True)
-            if mask == 255:
-                n = int(l/2-1)
-                ptr = 16
-                for i in range(n):
-                    rssi_vl = int.from_bytes(msg[ptr:(ptr+4)], "little", signed=True)
-                    ptr+=4
-                    print("RSSI: " +  str(rssi_vl))
-                    self.histogram_log_1[sDID][i][self.recordCount[(sDID-1)]] = rssi_vl
-                mask = int.from_bytes(msg[ptr:(ptr+4)], "little", signed=True)
-                ptr+=4
-                if mask == 255:
-                    for i in range(n):
-                        ir_vl = int.from_bytes(msg[ptr:(ptr+4)], "little", signed=True)
-                        print("IR:" + str(ir_vl))
-                        ptr+=4
-                        self.histogram_log_2[sDID][i][self.recordCount[(sDID-1)]] = ir_vl                    
-                    mask = int.from_bytes(msg[ptr:(ptr+4)], "little", signed=True)
-                    ptr+=4
-                    self.recordCount[(sDID-1)] += 1
-                    if mask != 255:
-                        print('END MASK not detected')
-                    else:
-                        if self.recordCount[sDID-1] >= self.RECORD_SIZE:
-                            self.timeStr = datetime.now().strftime('_%d%m%Y_%H%M%S')
-                            filename = 'RSSI N' + str(sDID) + self.timeStr + '.csv'
-                            filepath = os.sep.join([self.savepath['rec'], filename])
-                            np.savetxt(filepath, self.histogram_log_1[sDID], delimiter = ',', fmt = '%s')
-                            filename = 'IR N' + str(sDID) + self.timeStr + '.csv'
-                            filepath = os.sep.join([self.savepath['rec'], filename])
-                            np.savetxt(filepath, self.histogram_log_2[sDID], delimiter = ',', fmt = '%s')
-                            self.recordCount[sDID-1] = 0
-                else:
-                    print('IR MASK not detected')
-            else:
-                print('RSSI MASK not detected')
+        self.sim = sim
+        while(1):
+            if self.sUpdate:
+                # build image
+                pass
+                
+    def receive_callback(self, msg):
+        if msg[FrameIndex.TYPE] == FrameSymbol.CONTENT:
+            self.receive_content(msg)
+        elif msg[0] == 0x00:
+            self.sUpdate = True
         else:
             print(msg)
+    
+    def receive_content(self, msg):
+        msgID = int.from_bytes(msg[FrameIndex.ID])
+        sNID = msg[FrameIndex.sNID]
+        sDID = msg[FrameIndex.sDID]
+        print('NODE ID:' + str(sDID))
+        l = int.from_bytes(msg[FrameIndex.LENGTH_START:FrameIndex.MASK], 
+                           "little", signed=True)
+        mask = int.from_bytes(msg[FrameIndex.MASK:FrameIndex.PAYLOAD], 
+                              "little", signed=True)
+        if mask == FrameSymbol.MASK:
+            n = int(l/2-1)
+            ptr = FrameIndex.PAYLOAD
+            sIDX = int(sDID - 1)
+            for i in range(n):
+                rssi_vl = int.from_bytes(msg[ptr:(ptr+FrameSymbol.SIZE)], 
+                                         "little", signed=True)
+                ptr+=FrameSymbol.SIZE
+                print("RSSI: " +  str(rssi_vl))
+                self.input.update(rssi_vl, 'rssi', sDID, i)
+            mask = int.from_bytes(msg[ptr:(ptr+FrameSymbol.SIZE)], 
+                                  "little", signed=True)
+            ptr+=FrameSymbol.SIZE
+            if mask == FrameSymbol.MASK:
+                for i in range(n):
+                    ir_vl = int.from_bytes(msg[ptr:(ptr+FrameSymbol.SIZE)], 
+                                           "little", signed=True)
+                    print("IR:" + str(ir_vl))
+                    ptr+=FrameSymbol.SIZE
+                    self.input.update(ir_vl, 'ir', sDID, i)
+                mask = int.from_bytes(msg[ptr:(ptr+FrameSymbol.SIZE)], 
+                                      "little", signed=True)
+                ptr+=FrameSymbol.SIZE
+                self.input.count[sIDX] += 1
+                if mask != FrameSymbol.MASK:
+                    print('END MASK not detected')
+            else:
+                print('IR MASK not detected')
+        else:
+            print('RSSI MASK not detected')
+                        
+class ReceiveThread(threading.Thread):
+    def __init__(self, threadID, name, counter, rtiConn):
+        threading.Thread.__init__(self)
+        self.threadID = threadID
+        self.name = name
+        self.counter = counter
+        self.rtiConn = rtiConn
+
+    def run(self):
+        print("Starting " + self.name)
+        self.rtiConn.receive()
+        print("Exiting " + self.name)
+
+
+class RTIConnection():
+    MAX_BUFFER_SIZE = 100
+    THRESHOLD_LOG_LORA_RECEIVE = 10000
+    MODESTR = 'CONSISTANT_SERIAL'
+    
+    START_SYM = 0x01
+    STOP_SYM = 0x3E
+    SEPARATE_SYM = 0x3A
+
+    TYPE_SYM = 0x54
+    ID_SYM = 0x49
+    SENDER_SYM = 0x53
+    RECEIVER_SYM = 0x52
+    NEXT_SYM = 0x58
+    NODE_SYM = 0x4E
+    MASK_SYM = 0x7E
+    SPACE_SYM = 0x20
+
+    TYPE_BEACON_SYM = 0x30
+    TYPE_CONTENT_SYM = 0x31
+
+    def __init__(self, listener, portStr='COM3'):
+        try:
+            self.conn = serial.Serial(portStr,
+                                      115200,
+                                      serial.EIGHTBITS,
+                                      serial.PARITY_NONE,
+                                      serial.STOPBITS_ONE,
+                                      timeout=1)
+        except:
+            raise Exception('Unsuccessful COM Port connection')
+        self.listener = listener
+
+    def receive(self):
+        while(1):
+            if self.conn.in_waiting > 0:
+                msg = self.conn.readline()
+                if len(msg) > 0:
+                    self.listener.receive_callback(msg, self)
+
+        # self.histogram_log_1 = {}
+        # self.histogram_log_2 = {}
+        # self.input_1 = {}
+        # self.input_2 = {}
+        # for i in range(self.dim[0]):
+        #     self.histogram_log_1[i+1] = np.zeros([self.dim[1], self.RECORD_SIZE])
+        #     self.histogram_log_2[i+1] = np.zeros([self.dim[1], self.RECORD_SIZE])
+        #     self.input_1[i+1] = np.zeros([self.dim[1], 2])
+        #     self.input_2[i+1] = np.zeros([self.dim[1], 2])
+        # self.recordCount = np.zeros(self.dim[0], dtype=int)
+
         # if (msg[0] == RTIConnection.START_SYM):
         #     print(msg)
         #     if (msg[1] != RTIConnection.TYPE_SYM):
@@ -192,57 +255,3 @@ class RTIProcess():
         #                 filepath = os.sep.join([self.savepath['rec'], filename])
         #                 np.savetxt(filepath, self.histogram_log_2[sender_idx], delimiter = ',', fmt = '%s')
         #                 self.recordCount[sender_idx-1] = 0
-                        
-class ReceiveThread(threading.Thread):
-    def __init__(self, threadID, name, counter, rtiConn):
-        threading.Thread.__init__(self)
-        self.threadID = threadID
-        self.name = name
-        self.counter = counter
-        self.rtiConn = rtiConn
-
-    def run(self):
-        print("Starting " + self.name)
-        self.rtiConn.receive()
-        print("Exiting " + self.name)
-
-
-class RTIConnection():
-    MAX_BUFFER_SIZE = 100
-    THRESHOLD_LOG_LORA_RECEIVE = 10000
-    MODESTR = 'CONSISTANT_SERIAL'
-
-    START_SYM = 0x01
-    STOP_SYM = 0x3E
-    SEPARATE_SYM = 0x3A
-
-    TYPE_SYM = 0x54
-    ID_SYM = 0x49
-    SENDER_SYM = 0x53
-    RECEIVER_SYM = 0x52
-    NEXT_SYM = 0x58
-    NODE_SYM = 0x4E
-    MASK_SYM = 0x7E
-    SPACE_SYM = 0x20
-
-    TYPE_BEACON_SYM = 0x30
-    TYPE_CONTENT_SYM = 0x31
-
-    def __init__(self, listener, portStr='COM3'):
-        try:
-            self.conn = serial.Serial(portStr,
-                                      115200,
-                                      serial.EIGHTBITS,
-                                      serial.PARITY_NONE,
-                                      serial.STOPBITS_ONE,
-                                      timeout=1)
-        except:
-            raise Exception('Unsuccessful COM Port connection')
-        self.listener = listener
-
-    def receive(self):
-        while(1):
-            if self.conn.in_waiting > 0:
-                msg = self.conn.readline()
-                if len(msg) > 0:
-                    self.listener.receive_callback(msg, self)

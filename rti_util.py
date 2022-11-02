@@ -22,6 +22,7 @@ class Sensor:
         pos : 2D Coordination Object
             Position of the sensor node
         """
+        self.id = 0
         self.pos = pos
 
 class RTILink:
@@ -44,6 +45,7 @@ class RTILink:
         self.tx = tx
         self.rx = rx
         self.value = value
+        self.reverseValue = value
         self.distance = self.calLinkDistance()
 
     def calLinkDistance(self):

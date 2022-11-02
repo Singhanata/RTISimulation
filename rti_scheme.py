@@ -227,7 +227,7 @@ class RTIScheme():
     def getSensorPosition(self):
         raise NotImplementedError
     
-    def getLogDimension(self):
+    def getInputDimension(self):
         raise NotImplementedError
 
     def show(self, fn = 'scheme.svg', **kw):
