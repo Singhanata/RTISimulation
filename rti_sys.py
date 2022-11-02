@@ -55,8 +55,7 @@ class RTIProcess():
         self.sim = sim
         while(1):
             if self.sUpdate:
-                # build image
-                pass
+                self.sim.imcal(self.input)
                 
     def receive_callback(self, msg):
         if msg[FrameIndex.TYPE] == FrameSymbol.CONTENT:
