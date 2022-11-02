@@ -14,6 +14,7 @@ class RTIInput():
         self.log = {}
         self.size = sz
         self.savepath = savepath
+        self.ready = False
         for ar in args:
             self.log[ar] = {}
             self.prior[ar] = {}
@@ -24,7 +25,13 @@ class RTIInput():
     
     def update(self, vl, key, sDID, idx):
         self.log[key][sDID][idx][self.input.count['rssi'][sDID-1]] = vl
+        self.input
         if self.count[key] >= self.size:
+            if not self.ready:
+                self.prior[key][sDID][idx][0] = np.average(self.log[key][sDID][idx]
+                                                           [self.input
+                                                            .count['rssi'][sDID-1]])
+            self.ready = True
             self.timeStr = datetime.now().strftime('_%d%m%Y_%H%M%S')
             filename = key + ' N' + str(sDID) + self.timeStr + '.csv'
             filepath = os.sep.join([self.savepath['rec'], filename])
