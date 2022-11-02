@@ -4,7 +4,6 @@ Created on Fri Sep 30 10:51:00 2022
 @author: krong
 """
 import serial
-import numpy as np
 import threading
 from rti_frame import FrameIndex,FrameSymbol
 from rti_input import RTIInput
@@ -49,18 +48,19 @@ class RTIProcess():
 
         self.savepath = sim.process_routine(**setting)
         dim = sim.getInputDimension()
-        self.input = RTIInput(self.RECORD_SIZE, dim, self.savepath, 'rssi', 'ir')
+        self.input = RTIInput(self.RECORD_SIZE, dim, self.savepath, 
+                              'rssi', 'ir')
         self.ready = False
         self.sUpdate = False
         self.sim = sim
-        while(1):
-            if self.sUpdate:
-                self.sim.imcal(self.input)
+        # while(1):
+        #     if self.sUpdate:
+        #         self.sim.imcal(self.input)
                 
     def receive_callback(self, msg):
         if msg[FrameIndex.TYPE] == FrameSymbol.CONTENT:
             self.receive_content(msg)
-        elif msg[0] == 0x00:
+        elif msg[FrameIndex.TYPE] == FrameSymbol.BEACON:
             self.sUpdate = True
         else:
             print(msg)
@@ -157,7 +157,7 @@ class RTIConnection():
             if self.conn.in_waiting > 0:
                 msg = self.conn.readline()
                 if len(msg) > 0:
-                    self.listener.receive_callback(msg, self)
+                    self.listener.receive_callback(msg)
 
         # self.histogram_log_1 = {}
         # self.histogram_log_2 = {}

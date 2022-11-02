@@ -12,6 +12,8 @@ from datetime import datetime
 class RTIInput():
     def __init__(self, sz, dim, savepath, *args):
         self.log = {}
+        self.prior = {}
+        self.count = {}
         self.size = sz
         self.savepath = savepath
         self.ready = False
@@ -19,9 +21,9 @@ class RTIInput():
             self.log[ar] = {}
             self.prior[ar] = {}
             for i in range(dim[0]):
-                self.log[ar][i+1] = np.zeros([self.dim[1], sz])
-                self.prior[ar][i+1] = np.zeros([self.dim[1], 2])
-            self.count[ar] = np.zeros(self.dim[0], dtype=int)
+                self.log[ar][i+1] = np.zeros([dim[1], sz])
+                self.prior[ar][i+1] = np.zeros([dim[1], 2])
+            self.count[ar] = np.zeros(dim[0], dtype=int)
     
     def update(self, vl, key, sDID, idx):
         self.log[key][sDID][idx][self.input.count['rssi'][sDID-1]] = vl
