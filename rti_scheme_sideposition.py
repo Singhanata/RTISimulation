@@ -123,6 +123,20 @@ class SidePositionScheme(RTIScheme):
         se['scheme'] = 'SW'
         return se
     
+    def updateInput(self, inp):
+        kys = inp.prior.keys()
+        l_atten = {}
+        for k in kys:
+            llk = len(self.linkS)
+            l_a = np.zeros(llk)
+            count = 0
+            for i in range(llk/2):
+                idx = 2*i+1
+                for j in range(inp.size):
+                    l_a[count] = inp.prior[k][idx][j][1]
+            l_atten[k] = l_a
+        return l_atten
+    
     def describe(self):
         s = super().describe(self)
         s += '-Sideway_Poistioning'

@@ -53,9 +53,6 @@ class RTIProcess():
         self.ready = False
         self.sUpdate = False
         self.sim = sim
-        # while(1):
-        #     if self.sUpdate:
-        #         self.sim.imcal(self.input)
                 
     def receive_callback(self, msg):
         if msg[FrameIndex.TYPE] == FrameSymbol.CONTENT:
@@ -77,7 +74,6 @@ class RTIProcess():
         if mask == FrameSymbol.MASK:
             n = int(l/2-1)
             ptr = FrameIndex.PAYLOAD
-            sIDX = int(sDID - 1)
             for i in range(n):
                 rssi_vl = int.from_bytes(msg[ptr:(ptr+FrameSymbol.SIZE)], 
                                          "little", signed=True)
@@ -97,13 +93,19 @@ class RTIProcess():
                 mask = int.from_bytes(msg[ptr:(ptr+FrameSymbol.SIZE)], 
                                       "little", signed=True)
                 ptr+=FrameSymbol.SIZE
-                self.input.count[sIDX] += 1
                 if mask != FrameSymbol.MASK:
                     print('END MASK not detected')
             else:
                 print('IR MASK not detected')
         else:
             print('RSSI MASK not detected')
+    
+    def updateIM(self):
+        while(1):
+            if self.sUpdate:
+                self.sUpdate = False
+                self.sim.process_input(self.input)
+                
                         
 class ReceiveThread(threading.Thread):
     def __init__(self, threadID, name, counter, rtiConn):

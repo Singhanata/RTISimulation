@@ -159,6 +159,11 @@ class RTISimulation():
         save_path['conc'] = fn_con
         print('sim create.. ' + self.getTitle())
         return save_path
+    
+    def process_input(self, inp):
+        l_atten = self.scheme.updateInput(inp)
+        for key, vl in l_atten.items():
+            iM = self.estimator.calVoxelAtten(vl, True)
 
     def coorD(self, **kw):
         if 'axis' in kw:

@@ -58,7 +58,6 @@ def process_alpha(sim):
             RecordIndex.DERIVATIVE_RATIO_BN]
         }
      
-    
     ev = RTIEvaluation(**setting)
     
     for idx, al in enumerate(ev.param1):

@@ -27,6 +27,8 @@ def main():
         tReceiveRTI.start()
     except:
         raise Exception('Cannot Start Thread')
+    
+    rtiProcess.updateIM()
 
 
 if __name__ == '__main__':
