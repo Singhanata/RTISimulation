@@ -162,9 +162,11 @@ class RTISimulation():
     
     def process_input(self, inp):
         l_atten = self.scheme.updateInput(inp)
+        iM = {}
         for key, vl in l_atten.items():
-            iM = self.estimator.calVoxelAtten(vl, True)
-
+            iM[key] = self.estimator.calVoxelAtten(vl, True)
+        return iM
+    
     def coorD(self, **kw):
         if 'axis' in kw:
             axis = kw['axis']
